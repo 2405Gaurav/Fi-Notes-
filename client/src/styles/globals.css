@@ -1,0 +1,184 @@
+/* ============================================
+   Fi Money Notes — Global Styles
+   Google Keep Dark Mode Inspired
+   ============================================ */
+
+/* ─── CSS Custom Properties ──────────────── */
+:root {
+  /* Backgrounds */
+  --bg-app: #202124;
+  --bg-sidebar: #202124;
+  --bg-card: #2d2e30;
+  --bg-card-hover: #3c3f41;
+  --bg-input: #2d2e30;
+  --bg-modal: #2d2e30;
+  --bg-overlay: rgba(0, 0, 0, 0.55);
+  --bg-active-nav: rgba(254, 185, 0, 0.15);
+
+  /* Text */
+  --text-primary: #e8eaed;
+  --text-secondary: #9aa0a6;
+  --text-muted: #5f6368;
+
+  /* Accent */
+  --accent: #feb900;
+  --accent-dim: rgba(254, 185, 0, 0.2);
+
+  /* Borders */
+  --border-card: #5f6368;
+  --border-input: #5f6368;
+  --border-focus: #8ab4f8;
+
+  /* Status */
+  --color-shared: #81c995;
+  --color-pinned: #feb900;
+  --color-danger: #f28b82;
+
+  /* Typography scale */
+  --text-xs: 11px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  /* Radii */
+  --radius-card: 12px;
+  --radius-input: 8px;
+  --radius-pill: 24px;
+  --radius-modal: 12px;
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  /* Sidebar */
+  --sidebar-width: 280px;
+  --topbar-height: 64px;
+}
+
+/* ─── Base Reset ─────────────────────────── */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: "DM Sans", sans-serif;
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  background: var(--bg-app);
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+
+.note-content {
+  font-family: "DM Mono", monospace;
+  font-size: var(--text-sm);
+}
+
+a {
+  color: var(--border-focus);
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: inherit;
+}
+
+input,
+textarea {
+  font-family: inherit;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: inherit;
+}
+
+textarea {
+  resize: none;
+}
+
+/* ─── Scrollbar ──────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* ─── Skeleton Shimmer ───────────────────── */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #2d2e30 25%,
+    #3c3f41 50%,
+    #2d2e30 75%
+  );
+  background-size: 400px 100%;
+  animation: shimmer 1.2s ease-in-out infinite;
+  border-radius: var(--radius-input);
+}
+
+/* ─── Notes Grid (CSS Columns Masonry) ──── */
+.notes-grid {
+  columns: 4;
+  column-gap: 12px;
+  padding: 0 8px;
+}
+.notes-grid > * {
+  break-inside: avoid;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 1200px) {
+  .notes-grid {
+    columns: 3;
+  }
+}
+@media (max-width: 768px) {
+  .notes-grid {
+    columns: 2;
+  }
+}
+@media (max-width: 480px) {
+  .notes-grid {
+    columns: 1;
+  }
+}
+
+/* ─── Utility: Focus Ring ─────────────────── */
+.focus-ring:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
