@@ -7,6 +7,7 @@ import {
   update,
   remove,
 } from "../controllers/note.controller";
+import { share } from "../controllers/share.controller";
 
 const router = Router();
 
@@ -49,8 +50,8 @@ router.post("/", create);
  * /notes:
  *   get:
  *     tags: [Notes]
- *     summary: List authenticated user's notes
- *     description: Returns paginated, non-deleted notes owned by the user. Supports optional text search.
+ *     summary: List user's notes (owned + shared)
+ *     description: Returns paginated, non-deleted notes that the user owns OR that have been shared with them. Supports optional text search.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -208,5 +209,70 @@ router.put("/:id", update);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete("/:id", remove);
+
+/**
+ * @swagger
+ * /notes/{id}/share:
+ *   post:
+ *     tags: [Sharing]
+ *     summary: Share a note with another user
+ *     description: Shares a note with a registered user by email. Only the note owner can share. Default permission is READ.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ShareNoteRequest'
+ *     responses:
+ *       200:
+ *         description: Note shared successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Note shared successfully"
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Only the note owner can share
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: "You are not authorized to share this note"
+ *       404:
+ *         description: Note or recipient user not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       409:
+ *         description: Note already shared with this user
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *             example:
+ *               message: "Note already shared with this user"
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post("/:id/share", share);
 
 export default router;

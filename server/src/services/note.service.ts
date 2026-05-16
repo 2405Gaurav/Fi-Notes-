@@ -47,7 +47,7 @@ export async function createNote(userId: string, data: CreateNoteInput) {
   return note;
 }
 
-// ─── LIST (owned, non-deleted, paginated) ────
+// ─── LIST (owned + shared, non-deleted, paginated) ──
 
 export async function listNotes(userId: string, query: NoteQueryInput) {
   const page = query.page ?? PAGINATION.DEFAULT_PAGE;
@@ -57,17 +57,26 @@ export async function listNotes(userId: string, query: NoteQueryInput) {
   );
   const skip = (page - 1) * limit;
 
-  // Base filter: owned + not deleted
+  // Base filter: (owned OR shared-with-me) AND not deleted
+  const accessFilter = [
+    { ownerId: userId },
+    { sharedWith: { some: { sharedWithUserId: userId } } },
+  ];
+
   const where: Record<string, unknown> = {
-    ownerId: userId,
     isDeleted: false,
+    OR: accessFilter,
   };
 
-  // Optional text search across title and content
+  // Optional text search — AND-ed with the access filter
   if (query.search) {
-    where.OR = [
-      { title: { contains: query.search, mode: "insensitive" } },
-      { content: { contains: query.search, mode: "insensitive" } },
+    where.AND = [
+      {
+        OR: [
+          { title: { contains: query.search, mode: "insensitive" } },
+          { content: { contains: query.search, mode: "insensitive" } },
+        ],
+      },
     ];
   }
 
