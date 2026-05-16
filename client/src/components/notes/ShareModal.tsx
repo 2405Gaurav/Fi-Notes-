@@ -14,23 +14,19 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
-  const [sharedEmails, setSharedEmails] = useState<string[]>([]);
+  const [success, setSuccess] = useState("");
 
-  async function handleShare(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleShare() {
     if (!note || !email.trim()) return;
 
     setLoading(true);
     setError("");
-    setSuccess(false);
+    setSuccess("");
 
     try {
       await shareNote(note.id, email.trim());
-      setSharedEmails((prev) => [...prev, email.trim()]);
-      setSuccess(true);
+      setSuccess(`Shared with ${email.trim()}`);
       setEmail("");
-      setTimeout(() => setSuccess(false), 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to share");
     } finally {
@@ -41,8 +37,7 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
   function handleClose() {
     setEmail("");
     setError("");
-    setSuccess(false);
-    setSharedEmails([]);
+    setSuccess("");
     onClose();
   }
 
@@ -65,224 +60,226 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
             }}
           />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.94, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.96, y: 12 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+          {/* Centered container */}
+          <div
             style={{
               position: "fixed",
-              top: "50%",
-              left: "50%",
-              transform: "translate(-50%, -50%)",
-              width: "90vw",
-              maxWidth: 380,
-              background: "var(--bg-modal)",
-              borderRadius: "var(--radius-modal)",
-              boxShadow: "var(--shadow-modal)",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               zIndex: 601,
-              padding: 24,
+              pointerEvents: "none",
             }}
           >
-            {/* Header */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 10 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 20,
+                pointerEvents: "auto",
+                width: "90vw",
+                maxWidth: 400,
+                background: "var(--bg-modal)",
+                borderRadius: "var(--radius-modal)",
+                boxShadow: "var(--shadow-modal)",
+                overflow: "hidden",
               }}
             >
-              <h2
+              {/* Header */}
+              <div
                 style={{
-                  fontSize: 18,
-                  fontWeight: 500,
-                  color: "var(--text-primary)",
-                }}
-              >
-                Share note
-              </h2>
-              <button
-                onClick={handleClose}
-                aria-label="Close"
-                style={{
-                  width: 30,
-                  height: 30,
-                  borderRadius: "50%",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
+                  justifyContent: "space-between",
+                  padding: "18px 20px 14px",
                 }}
               >
-                <X size={18} color="var(--text-secondary)" />
-              </button>
-            </div>
-
-            {/* Form */}
-            <form
-              onSubmit={handleShare}
-              style={{ display: "flex", gap: 8, marginBottom: 6 }}
-            >
-              <input
-                type="email"
-                placeholder="Enter email address..."
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError("");
-                }}
-                style={{
-                  flex: 1,
-                  height: 40,
-                  padding: "0 12px",
-                  border: `1px solid ${error ? "var(--color-danger)" : "var(--border-input)"}`,
-                  borderRadius: "var(--radius-input)",
-                  background: "var(--bg-input)",
-                  fontSize: "var(--text-sm)",
-                  color: "var(--text-primary)",
-                  outline: "none",
-                  transition: "border-color 0.15s",
-                }}
-                onFocus={(e) => {
-                  if (!error)
-                    e.currentTarget.style.borderColor =
-                      "var(--border-focus)";
-                }}
-                onBlur={(e) => {
-                  if (!error)
-                    e.currentTarget.style.borderColor =
-                      "var(--border-input)";
-                }}
-              />
-              <button
-                type="submit"
-                disabled={loading || !email.trim()}
-                style={{
-                  height: 40,
-                  padding: "0 18px",
-                  borderRadius: "var(--radius-pill)",
-                  background: "var(--accent)",
-                  color: "#202124",
-                  fontWeight: 600,
-                  fontSize: "var(--text-sm)",
-                  opacity: loading || !email.trim() ? 0.5 : 1,
-                  cursor:
-                    loading || !email.trim() ? "not-allowed" : "pointer",
-                  transition: "opacity 0.15s",
-                  flexShrink: 0,
-                }}
-              >
-                {loading ? (
-                  <motion.span
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 0.7,
-                      ease: "linear",
-                    }}
-                    style={{
-                      display: "inline-block",
-                      width: 14,
-                      height: 14,
-                      border: "2px solid #202124",
-                      borderTopColor: "transparent",
-                      borderRadius: "50%",
-                    }}
-                  />
-                ) : (
-                  "Share"
-                )}
-              </button>
-            </form>
-
-            {/* Error */}
-            {error && (
-              <p
-                style={{
-                  fontSize: "var(--text-xs)",
-                  color: "var(--color-danger)",
-                  marginTop: 4,
-                  marginBottom: 4,
-                }}
-              >
-                {error}
-              </p>
-            )}
-
-            {/* Success animation */}
-            <AnimatePresence>
-              {success && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
+                <h2
                   style={{
+                    fontSize: 17,
+                    fontWeight: 500,
+                    color: "var(--text-primary)",
+                  }}
+                >
+                  Share note
+                </h2>
+                <button
+                  onClick={handleClose}
+                  aria-label="Close"
+                  style={{
+                    width: 30,
+                    height: 30,
+                    borderRadius: "50%",
                     display: "flex",
                     alignItems: "center",
-                    gap: 6,
-                    color: "var(--color-shared)",
-                    fontSize: "var(--text-sm)",
-                    marginTop: 8,
+                    justifyContent: "center",
+                    transition: "background 0.1s",
                   }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background =
+                      "rgba(255,255,255,0.08)")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 400,
-                      damping: 15,
-                    }}
-                  >
-                    <Check size={16} />
-                  </motion.div>
-                  Shared successfully
-                </motion.div>
-              )}
-            </AnimatePresence>
+                  <X size={16} color="var(--text-secondary)" />
+                </button>
+              </div>
 
-            {/* Shared with list */}
-            {sharedEmails.length > 0 && (
-              <div style={{ marginTop: 16 }}>
-                <p
-                  style={{
-                    fontSize: "var(--text-xs)",
-                    color: "var(--text-muted)",
-                    marginBottom: 6,
-                    textTransform: "uppercase",
-                    letterSpacing: 0.5,
+              {/* Email input */}
+              <div style={{ padding: "0 20px 16px" }}>
+                <input
+                  type="email"
+                  placeholder="Enter the email you want to share with"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError("");
+                    setSuccess("");
                   }}
-                >
-                  Shared with:
-                </p>
-                {sharedEmails.map((e) => (
-                  <div
-                    key={e}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleShare();
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    height: 44,
+                    padding: "0 14px",
+                    border: `1px solid ${error ? "var(--color-danger)" : "var(--border-input)"}`,
+                    borderRadius: "var(--radius-input)",
+                    background: "var(--bg-input)",
+                    fontSize: "var(--text-sm)",
+                    color: "var(--text-primary)",
+                    outline: "none",
+                    transition: "border-color 0.15s",
+                  }}
+                  onFocus={(e) => {
+                    if (!error)
+                      e.currentTarget.style.borderColor =
+                        "var(--border-focus)";
+                  }}
+                  onBlur={(e) => {
+                    if (!error)
+                      e.currentTarget.style.borderColor =
+                        "var(--border-input)";
+                  }}
+                />
+
+                {/* Error */}
+                {error && (
+                  <p
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 8,
-                      padding: "6px 0",
-                      fontSize: "var(--text-sm)",
-                      color: "var(--text-secondary)",
+                      fontSize: "var(--text-xs)",
+                      color: "var(--color-danger)",
+                      marginTop: 8,
                     }}
                   >
-                    <div
+                    {error}
+                  </p>
+                )}
+
+                {/* Success */}
+                <AnimatePresence>
+                  {success && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.2 }}
                       style={{
-                        width: 6,
-                        height: 6,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        marginTop: 8,
+                        color: "var(--color-shared)",
+                        fontSize: "var(--text-sm)",
+                      }}
+                    >
+                      <Check size={15} />
+                      {success}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Footer — Cancel / Share */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "flex-end",
+                  gap: 8,
+                  padding: "12px 20px",
+                  borderTop: "1px solid #3c3f41",
+                }}
+              >
+                <button
+                  onClick={handleClose}
+                  style={{
+                    padding: "8px 20px",
+                    borderRadius: "var(--radius-pill)",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 500,
+                    color: "var(--text-secondary)",
+                    transition: "background 0.1s, color 0.1s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background =
+                      "rgba(255,255,255,0.06)";
+                    e.currentTarget.style.color = "var(--text-primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleShare}
+                  disabled={!email.trim() || loading}
+                  style={{
+                    padding: "8px 22px",
+                    borderRadius: "var(--radius-pill)",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 600,
+                    background: "var(--accent)",
+                    color: "#202124",
+                    opacity: !email.trim() || loading ? 0.4 : 1,
+                    cursor:
+                      !email.trim() || loading ? "not-allowed" : "pointer",
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  {loading ? (
+                    <motion.span
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 0.7,
+                        ease: "linear",
+                      }}
+                      style={{
+                        display: "inline-block",
+                        width: 14,
+                        height: 14,
+                        border: "2px solid #202124",
+                        borderTopColor: "transparent",
                         borderRadius: "50%",
-                        background: "var(--color-shared)",
-                        flexShrink: 0,
                       }}
                     />
-                    {e}
-                  </div>
-                ))}
+                  ) : (
+                    "Share"
+                  )}
+                </button>
               </div>
-            )}
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

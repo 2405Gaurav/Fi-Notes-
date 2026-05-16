@@ -19,7 +19,7 @@ export default function NoteComposer() {
     if (isOpen) titleRef.current?.focus();
   }, [isOpen]);
 
-  // Click-outside to close + save
+  // Click-outside to cancel
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (
@@ -27,17 +27,25 @@ export default function NoteComposer() {
         containerRef.current &&
         !containerRef.current.contains(e.target as Node)
       ) {
-        handleClose();
+        handleCancel();
       }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   });
 
-  function handleClose() {
+  function handleSave() {
     if (title.trim() || content.trim()) {
       addNote(title.trim() || "Untitled", content.trim());
     }
+    resetAndClose();
+  }
+
+  function handleCancel() {
+    resetAndClose();
+  }
+
+  function resetAndClose() {
     setTitle("");
     setContent("");
     setOpen(false);
@@ -143,7 +151,7 @@ export default function NoteComposer() {
                 }}
               />
 
-              {/* Toolbar */}
+              {/* Action Buttons — Save + Cancel */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -152,28 +160,51 @@ export default function NoteComposer() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "flex-end",
+                  gap: 8,
                   padding: "8px 12px",
+                  borderTop: "1px solid #3c3f41",
                 }}
               >
                 <button
-                  onClick={handleClose}
+                  onClick={handleCancel}
                   style={{
-                    padding: "6px 20px",
+                    padding: "7px 20px",
                     borderRadius: "var(--radius-pill)",
                     fontSize: "var(--text-sm)",
                     fontWeight: 500,
-                    color: "var(--text-primary)",
-                    transition: "background 0.1s",
+                    color: "var(--text-secondary)",
+                    transition: "background 0.1s, color 0.1s",
                   }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.background =
-                      "rgba(255,255,255,0.06)")
-                  }
-                  onMouseLeave={(e) =>
-                    (e.currentTarget.style.background = "transparent")
-                  }
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.06)";
+                    e.currentTarget.style.color = "var(--text-primary)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "transparent";
+                    e.currentTarget.style.color = "var(--text-secondary)";
+                  }}
                 >
-                  Close
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={!title.trim() && !content.trim()}
+                  style={{
+                    padding: "7px 22px",
+                    borderRadius: "var(--radius-pill)",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: 600,
+                    background: "var(--accent)",
+                    color: "#202124",
+                    opacity: !title.trim() && !content.trim() ? 0.4 : 1,
+                    cursor:
+                      !title.trim() && !content.trim()
+                        ? "not-allowed"
+                        : "pointer",
+                    transition: "opacity 0.15s",
+                  }}
+                >
+                  Save
                 </button>
               </motion.div>
             </motion.div>
