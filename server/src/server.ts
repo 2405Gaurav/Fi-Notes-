@@ -5,9 +5,14 @@ import prisma from "./lib/prisma";
 
 // ─── Route Modules ──────────────────────────
 import authRoutes from "./routes/auth.routes";
+import noteRoutes from "./routes/note.routes";
 
 // ─── Middleware ──────────────────────────────
 import { errorHandler } from "./middleware";
+
+// ─── Swagger / OpenAPI ──────────────────────
+import swaggerUi from "swagger-ui-express";
+import { swaggerSpec } from "./docs/swagger";
 
 // ─── Express App ────────────────────────────
 const app = express();
@@ -16,11 +21,78 @@ const app = express();
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: "5mb" }));
 
+// ─── Swagger UI ─────────────────────────────
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+/**
+ * @swagger
+ * /openapi.json:
+ *   get:
+ *     tags: [Health]
+ *     summary: Raw OpenAPI specification
+ *     description: Returns the auto-generated OpenAPI 3.0 JSON specification.
+ *     responses:
+ *       200:
+ *         description: OpenAPI specification JSON
+ */
+app.get("/openapi.json", (_req, res) => {
+  res.json(swaggerSpec);
+});
+
 // ─── Health / About ─────────────────────────
+
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     tags: [Health]
+ *     summary: Health check
+ *     description: Returns a simple health-check response.
+ *     responses:
+ *       200:
+ *         description: Server is running
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 ok:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Fi Notes API is running"
+ */
 app.get("/", (_req, res) => {
   res.json({ ok: true, message: "Fi Notes API is running" });
 });
 
+/**
+ * @swagger
+ * /about:
+ *   get:
+ *     tags: [Health]
+ *     summary: API information
+ *     description: Returns API metadata including name, version, and available endpoints.
+ *     responses:
+ *       200:
+ *         description: API info object
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 name:
+ *                   type: string
+ *                 version:
+ *                   type: string
+ *                 description:
+ *                   type: string
+ *                 endpoints:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ */
 app.get("/about", (_req, res) => {
   res.json({
     name: "Fi Money Notes API",
@@ -45,8 +117,8 @@ app.get("/about", (_req, res) => {
 
 // ─── API Routes ─────────────────────────────
 app.use("/auth", authRoutes);
+app.use("/notes", noteRoutes);
 // TODO: Mount remaining route modules
-// app.use("/notes", noteRoutes);
 // app.use("/search", searchRoutes);
 
 // ─── 404 catch-all ──────────────────────────
@@ -64,6 +136,7 @@ prisma
     app.listen(config.port, () => {
       console.log(`✓ Server listening on http://localhost:${config.port}`);
       console.log(`✓ Database connected (${config.isProduction ? "prod" : "dev"})`);
+      console.log(`✓ Swagger docs at http://localhost:${config.port}/api-docs`);
     });
   })
   .catch((err) => {

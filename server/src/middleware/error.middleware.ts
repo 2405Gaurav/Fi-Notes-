@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
 import { AuthError } from "../services/auth.service";
+import { NoteError } from "../services/note.service";
 import { HTTP_STATUS } from "../constants";
 
 /**
@@ -10,11 +11,11 @@ import { HTTP_STATUS } from "../constants";
  * JSON response with the appropriate HTTP status code.
  *
  * Handles:
- * - AuthError         → custom status code
- * - ZodError          → 400 with field-level details
- * - JWT errors        → 401
- * - Prisma errors     → 400 / 409 / 500 depending on code
- * - Everything else   → 500
+ * - AuthError / NoteError → custom status code
+ * - ZodError              → 400 with field-level details
+ * - JWT errors            → 401
+ * - Prisma errors         → 400 / 409 / 500 depending on code
+ * - Everything else       → 500
  */
 export function errorHandler(
   err: Error,
@@ -22,8 +23,8 @@ export function errorHandler(
   res: Response,
   _next: NextFunction
 ): void {
-  // ── Known auth errors ─────────────────────
-  if (err instanceof AuthError) {
+  // ── Known service errors (AuthError, NoteError) ──
+  if (err instanceof AuthError || err instanceof NoteError) {
     res.status(err.statusCode).json({ message: err.message });
     return;
   }
