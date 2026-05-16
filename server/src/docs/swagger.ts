@@ -108,18 +108,13 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
       },
       ShareNoteRequest: {
         type: "object",
-        required: ["sharedWithUserId"],
+        required: ["share_with_email"],
         properties: {
-          sharedWithUserId: {
+          share_with_email: {
             type: "string",
-            format: "uuid",
-            example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-          },
-          permission: {
-            type: "string",
-            enum: ["READ", "EDIT"],
-            default: "READ",
-            example: "READ",
+            format: "email",
+            example: "jane@example.com",
+            description: "Email address of the user to share the note with",
           },
         },
       },
@@ -148,7 +143,6 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
           content: { type: "string" },
           isPinned: { type: "boolean" },
           isArchived: { type: "boolean" },
-          isDeleted: { type: "boolean" },
           ownerId: { type: "string", format: "uuid" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
