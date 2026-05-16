@@ -1,0 +1,85 @@
+# =========================
+# ROOT
+# =========================
+
+# env files
+.env
+.env.*
+!.env.example
+
+# logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# cache
+.cache/
+.temp/
+tmp/
+temp/
+
+# coverage
+coverage/
+
+# =========================
+# CLIENT
+# =========================
+
+client/node_modules/
+client/dist/
+client/build/
+
+# vite
+client/vite.svg
+
+# next.js
+client/.next/
+
+# turbo
+client/.turbo/
+
+# typescript
+client/*.tsbuildinfo
+
+# =========================
+# SERVER
+# =========================
+
+server/node_modules/
+server/dist/
+server/build/
+
+# prisma
+server/prisma/migrations/
+
+# uploads
+server/uploads/
+
+# typescript
+server/*.tsbuildinfo
+
+# generated
+server/generated/
+
+# =========================
+# TESTING
+# =========================
+
+playwright-report/
+test-results/
+
+# =========================
+# DOCKER
+# =========================
+
+.docker/
