@@ -3,6 +3,12 @@ import express from "express";
 import cors from "cors";
 import prisma from "./lib/prisma";
 
+// ─── Route Modules ──────────────────────────
+import authRoutes from "./routes/auth.routes";
+
+// ─── Middleware ──────────────────────────────
+import { errorHandler } from "./middleware";
+
 // ─── Express App ────────────────────────────
 const app = express();
 
@@ -37,8 +43,9 @@ app.get("/about", (_req, res) => {
   });
 });
 
-// TODO: Mount route modules here
-// app.use("/auth",  authRoutes);
+// ─── API Routes ─────────────────────────────
+app.use("/auth", authRoutes);
+// TODO: Mount remaining route modules
 // app.use("/notes", noteRoutes);
 // app.use("/search", searchRoutes);
 
@@ -46,6 +53,9 @@ app.get("/about", (_req, res) => {
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found" });
 });
+
+// ─── Global Error Handler (must be last) ────
+app.use(errorHandler);
 
 // ─── Start Server ───────────────────────────
 prisma

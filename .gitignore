@@ -58,6 +58,8 @@ client/*.tsbuildinfo
 server/node_modules/
 server/dist/
 server/build/
+server/env/
+server/env.example/
 
 # prisma
 server/prisma/migrations/
@@ -70,13 +72,6 @@ server/*.tsbuildinfo
 
 # generated
 server/generated/
-
-# =========================
-# TESTING
-# =========================
-
-playwright-report/
-test-results/
 
 # =========================
 # DOCKER
