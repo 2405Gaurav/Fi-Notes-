@@ -31,9 +31,11 @@ export function errorHandler(
 
   // ── Zod validation errors ─────────────────
   if (err instanceof ZodError) {
+    const fieldErrors = err.flatten().fieldErrors;
+    const firstError = Object.values(fieldErrors).flat()[0];
     res.status(HTTP_STATUS.BAD_REQUEST).json({
-      message: "Validation failed",
-      errors: err.flatten().fieldErrors,
+      message: firstError || "Invalid input. Please check your data.",
+      errors: fieldErrors,
     });
     return;
   }

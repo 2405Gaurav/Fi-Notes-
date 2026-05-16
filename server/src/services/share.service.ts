@@ -41,7 +41,7 @@ export async function shareNote(
   });
 
   if (!recipient) {
-    throw new NoteError("User not found", 404);
+    throw new NoteError("No user exists with this email", 404);
   }
 
   // 3. Prevent sharing with yourself

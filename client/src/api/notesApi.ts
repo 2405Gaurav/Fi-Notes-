@@ -7,14 +7,37 @@ function headers(token?: string | null): HeadersInit {
   return h;
 }
 
-/** Generic response handler — throws on non-2xx */
+/** Generic response handler — throws on non-2xx with clear messages */
 async function handleResponse<T>(res: Response): Promise<T> {
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    const msg =
-      (data as { message?: string }).message || `Error ${res.status}`;
-    throw new Error(msg);
+  let data: Record<string, unknown> = {};
+  try {
+    data = await res.json();
+  } catch {
+    // Response body wasn't JSON — fall through to status check
   }
+
+  if (!res.ok) {
+    // Use the server's message if available, otherwise provide a clear fallback
+    const serverMsg = (data as { message?: string }).message;
+    if (serverMsg) throw new Error(serverMsg);
+
+    // Status-specific fallbacks
+    switch (res.status) {
+      case 401:
+        throw new Error("Session expired. Please log in again.");
+      case 403:
+        throw new Error("You are not authorized to perform this action.");
+      case 404:
+        throw new Error("The requested resource was not found.");
+      case 409:
+        throw new Error("This action has already been performed.");
+      case 429:
+        throw new Error("Too many requests. Please wait a moment.");
+      default:
+        throw new Error("Something went wrong. Please try again.");
+    }
+  }
+
   return data as T;
 }
 

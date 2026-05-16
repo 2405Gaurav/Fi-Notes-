@@ -14,9 +14,12 @@ export async function register(
     const parsed = registerSchema.safeParse(req.body);//it will check against the zod schemaa here
 
     if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      // Extract the first field error for a user-friendly message
+      const firstError = Object.values(errors).flat()[0];
       res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: parsed.error.flatten().fieldErrors,
+        message: firstError || "Invalid registration details. Please check your input.",
+        errors,
       });
       return;
     }
@@ -42,9 +45,11 @@ export async function login(
     const parsed = loginSchema.safeParse(req.body);
 
     if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      const firstError = Object.values(errors).flat()[0];
       res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: parsed.error.flatten().fieldErrors,
+        message: firstError || "Invalid credentials format. Please check your input.",
+        errors,
       });
       return;
     }

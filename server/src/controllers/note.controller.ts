@@ -19,9 +19,11 @@ export async function create(
     const parsed = createNoteSchema.safeParse(req.body);
 
     if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      const firstError = Object.values(errors).flat()[0];
       res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: parsed.error.flatten().fieldErrors,
+        message: firstError || "Please provide a valid title and content.",
+        errors,
       });
       return;
     }
@@ -88,9 +90,11 @@ export async function update(
     const parsed = updateNoteSchema.safeParse(req.body);
 
     if (!parsed.success) {
+      const errors = parsed.error.flatten().fieldErrors;
+      const firstError = Object.values(errors).flat()[0];
       res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: parsed.error.flatten().fieldErrors,
+        message: firstError || "Invalid note data. Please check your input.",
+        errors,
       });
       return;
     }

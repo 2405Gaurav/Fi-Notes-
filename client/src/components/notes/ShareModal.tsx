@@ -16,8 +16,18 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
+  // Simple email format check
+  const isValidEmail = (val: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+
   async function handleShare() {
     if (!note || !email.trim()) return;
+
+    // Client-side format check
+    if (!isValidEmail(email.trim())) {
+      setError("Please enter a valid email for sharing");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -28,7 +38,9 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
       setSuccess(`Shared with ${email.trim()}`);
       setEmail("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to share");
+      // Backend returns clear messages: "No user exists with this email",
+      // "Note already shared with this user", "You cannot share a note with yourself", etc.
+      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
     } finally {
       setLoading(false);
     }

@@ -16,8 +16,7 @@ export async function share(
 
     if (!parsed.success) {
       res.status(HTTP_STATUS.BAD_REQUEST).json({
-        message: "Validation failed",
-        errors: parsed.error.flatten().fieldErrors,
+        message: "Please enter a valid email address",
       });
       return;
     }
