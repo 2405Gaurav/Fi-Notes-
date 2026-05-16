@@ -1,0 +1,15 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Using Neon serverless PostgreSQL database
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Connection URL comes from prisma.config.ts -> DATABASE_URL env var
+  // Uses Neon serverless PostgreSQL
+}
