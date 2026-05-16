@@ -40,7 +40,7 @@ client/dist/
 client/build/
 
 # vite
-client/vite.svg
+client/src/vite.svg
 
 # next.js
 client/.next/
