@@ -1,7 +1,7 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Using Neon serverless PostgreSQL database
+// ============================================
+// Fi Money Notes — Prisma Schema
+// Database: PostgreSQL (NeonDB Serverless)
+// ============================================
 
 generator client {
   provider = "prisma-client"
@@ -10,6 +10,118 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  // Connection URL comes from prisma.config.ts -> DATABASE_URL env var
-  // Uses Neon serverless PostgreSQL
+  // Connection URL injected via prisma.config.ts → DATABASE_URL
+}
+
+// ─── Enums ──────────────────────────────────
+
+/// Permission level when sharing a note with another user
+enum SharePermission {
+  READ
+  EDIT
+}
+
+// ─── User ───────────────────────────────────
+
+/// Registered user in the system.
+/// Supports JWT auth with hashed passwords.
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique @db.VarChar(255)
+  name      String   @db.VarChar(100)
+  password  String   @db.VarChar(255) // bcrypt hash
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // ── Relations ──
+  notes       Note[]       @relation("UserNotes")       // notes I own
+  sharedNotes SharedNote[] @relation("SharedWithUser")   // notes shared with me
+
+  @@map("users")
+}
+
+// ─── Note ───────────────────────────────────
+
+/// A rich-text note owned by a single user.
+/// Supports soft-delete, archiving, and version history.
+model Note {
+  id        String   @id @default(uuid()) @db.Uuid
+  title     String   @db.VarChar(255)
+  content   String   @db.Text
+  isPinned  Boolean  @default(false) @map("is_pinned")
+  isArchived Boolean @default(false) @map("is_archived")
+
+  // Soft delete
+  isDeleted Boolean  @default(false) @map("is_deleted")
+  deletedAt DateTime? @map("deleted_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // ── Owner ──
+  ownerId String @map("owner_id") @db.Uuid
+  owner   User   @relation("UserNotes", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // ── Relations ──
+  sharedWith SharedNote[]  @relation("NoteShares")
+  versions   NoteVersion[] @relation("NoteVersions")
+
+  // ── Indexes ──
+  @@index([ownerId], map: "idx_note_owner")
+  @@index([title], map: "idx_note_title")
+  @@index([isDeleted, isArchived], map: "idx_note_status")
+  @@index([ownerId, isDeleted, createdAt], map: "idx_note_feed")
+
+  @@map("notes")
+}
+
+// ─── SharedNote ─────────────────────────────
+
+/// Join table for note sharing.
+/// Enforces unique (noteId + sharedWithUserId) to prevent duplicate shares.
+model SharedNote {
+  id         String          @id @default(uuid()) @db.Uuid
+  permission SharePermission @default(READ)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // ── Note being shared ──
+  noteId String @map("note_id") @db.Uuid
+  note   Note   @relation("NoteShares", fields: [noteId], references: [id], onDelete: Cascade)
+
+  // ── User receiving access ──
+  sharedWithUserId String @map("shared_with_user_id") @db.Uuid
+  sharedWithUser   User   @relation("SharedWithUser", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+
+  // ── Constraints ──
+  @@unique([noteId, sharedWithUserId], map: "uq_note_shared_user")
+  @@index([sharedWithUserId], map: "idx_shared_with_user")
+  @@index([noteId], map: "idx_shared_note")
+
+  @@map("shared_notes")
+}
+
+// ─── NoteVersion ────────────────────────────
+
+/// Immutable snapshot of a note at a point in time.
+/// Created on every significant edit for audit trail / restore.
+model NoteVersion {
+  id      String @id @default(uuid()) @db.Uuid
+  version Int    @default(1)
+  title   String @db.VarChar(255)
+  content String @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // ── Parent note ──
+  noteId String @map("note_id") @db.Uuid
+  note   Note   @relation("NoteVersions", fields: [noteId], references: [id], onDelete: Cascade)
+
+  // ── Constraints ──
+  @@unique([noteId, version], map: "uq_note_version")
+  @@index([noteId], map: "idx_version_note")
+
+  @@map("note_versions")
 }

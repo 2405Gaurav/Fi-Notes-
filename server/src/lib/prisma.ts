@@ -2,17 +2,33 @@ import { PrismaNeon } from "@prisma/adapter-neon";
 import { PrismaClient } from "../generated/prisma/client";
 
 /**
- * Creates and returns a PrismaClient instance configured with the
- * Neon serverless PostgreSQL adapter.
+ * Singleton PrismaClient wired through the Neon serverless HTTP adapter.
  *
- * Uses PrismaNeon with a connectionString config object — the modern
- * approach that lets the adapter manage connections internally.
+ * In development we attach the instance to `globalThis` so hot-reload
+ * (tsx watch) doesn't exhaust connection limits by spawning new clients.
  */
 
-const connectionString = process.env.DATABASE_URL!;
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
 
-const adapter = new PrismaNeon({ connectionString });
+function createPrismaClient(): PrismaClient {
+  const connectionString = process.env.DATABASE_URL!;
+  const adapter = new PrismaNeon({ connectionString });
 
-const prisma = new PrismaClient({ adapter });
+  return new PrismaClient({
+    adapter,
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "error", "warn"]
+        : ["error"],
+  });
+}
+
+const prisma = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
 
 export default prisma;
