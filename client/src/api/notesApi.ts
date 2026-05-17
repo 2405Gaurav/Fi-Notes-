@@ -17,6 +17,22 @@ async function handleResponse<T>(res: Response): Promise<T> {
   }
 
   if (!res.ok) {
+    // ── Rate limit: include Retry-After info ──
+    if (res.status === 429) {
+      const retryAfter = res.headers.get("Retry-After") || res.headers.get("ratelimit-reset");
+      let waitMsg = "Please wait a moment and try again.";
+      if (retryAfter) {
+        const secs = parseInt(retryAfter, 10);
+        if (!isNaN(secs) && secs > 0) {
+          const mins = Math.ceil(secs / 60);
+          waitMsg = mins > 1
+            ? `Please wait ${mins} minutes before trying again.`
+            : `Please wait about a minute before trying again.`;
+        }
+      }
+      throw new Error(`Too many requests. ${waitMsg}`);
+    }
+
     // Use the server's message if available, otherwise provide a clear fallback
     const serverMsg = (data as { message?: string }).message;
     if (serverMsg) throw new Error(serverMsg);
@@ -31,8 +47,6 @@ async function handleResponse<T>(res: Response): Promise<T> {
         throw new Error("The requested resource was not found.");
       case 409:
         throw new Error("This action has already been performed.");
-      case 429:
-        throw new Error("Too many requests. Please wait a moment.");
       default:
         throw new Error("Something went wrong. Please try again.");
     }
@@ -175,12 +189,7 @@ export async function apiDeleteNote(
     method: "DELETE",
     headers: headers(token),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(
-      (data as { message?: string }).message || "Something went wrong. Please try again."
-    );
-  }
+  if (!res.ok) await handleResponse(res);
 }
 
 // ─── Sharing ─────────────────────────────────
@@ -220,12 +229,7 @@ export async function apiPermanentDeleteNote(
     method: "DELETE",
     headers: headers(token),
   });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    throw new Error(
-      (data as { message?: string }).message || "Something went wrong. Please try again."
-    );
-  }
+  if (!res.ok) await handleResponse(res);
 }
 
 // ─── Version History ─────────────────────────

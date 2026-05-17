@@ -1,6 +1,7 @@
 import { config } from "./config";
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import prisma from "./lib/prisma";
 
 // ─── Route Modules ──────────────────────────
@@ -21,6 +22,16 @@ const app = express();
 // ─── Global Middleware ──────────────────────
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 app.use(express.json({ limit: "5mb" }));
+
+// ─── Rate Limiting ──────────────────────────
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 100,               // 100 requests per window per IP
+  standardHeaders: "draft-7",
+  legacyHeaders: false,
+  message: { message: "Too many requests, please try again later." },
+});
+app.use(limiter);
 
 // ─── Swagger UI ─────────────────────────────
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
