@@ -67,12 +67,24 @@ export function errorHandler(
           message: "Record not found",
         });
         return;
+      case "P2007": // Invalid input value (e.g. bad UUID format)
+        res.status(HTTP_STATUS.NOT_FOUND).json({
+          message: "Note not found",
+        });
+        return;
       default:
         break;
     }
   }
 
   if (err.constructor?.name === "PrismaClientValidationError") {
+    // Invalid UUID format in path params → treat as "not found"
+    if (err.message?.includes("Uuid") || err.message?.includes("uuid") || err.message?.includes("Invalid value")) {
+      res.status(HTTP_STATUS.NOT_FOUND).json({
+        message: "Note not found",
+      });
+      return;
+    }
     res.status(HTTP_STATUS.BAD_REQUEST).json({
       message: "Invalid data provided",
     });
