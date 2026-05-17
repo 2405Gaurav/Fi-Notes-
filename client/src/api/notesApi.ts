@@ -57,12 +57,10 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 // ─── Auth ────────────────────────────────────
 
-export async function apiRegister(
-  name: string,
-  email: string,
-  password: string
-) {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+// ─── Auth ────────────────────────────────────
+
+export async function apiRegister(name: string, email: string, password: string) {
+  const res = await fetch(`${API_BASE}/register`, {   // ← was /auth/register
     method: "POST",
     headers: headers(),
     body: JSON.stringify({ name, email, password }),
@@ -71,7 +69,7 @@ export async function apiRegister(
 }
 
 export async function apiLogin(email: string, password: string) {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const res = await fetch(`${API_BASE}/login`, {      // ← was /auth/login
     method: "POST",
     headers: headers(),
     body: JSON.stringify({ email, password }),
@@ -242,7 +240,7 @@ export interface NoteVersion {
   createdAt: string;
 }
 
-export interface VersionsResponse {
+export interface VersionsResponse{
   versions: NoteVersion[];
   meta: PaginationMeta;
 }
