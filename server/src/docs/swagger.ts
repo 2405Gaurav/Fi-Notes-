@@ -116,6 +116,12 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
             example: "jane@example.com",
             description: "Email address of the user to share the note with",
           },
+          permission: {
+            type: "string",
+            enum: ["READ", "EDIT"],
+            default: "READ",
+            description: "Permission level for the shared user",
+          },
         },
       },
 
@@ -146,6 +152,55 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
           ownerId: { type: "string", format: "uuid" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+        },
+      },
+      NoteWithSharing: {
+        type: "object",
+        properties: {
+          id: { type: "string", format: "uuid" },
+          title: { type: "string" },
+          content: { type: "string" },
+          isPinned: { type: "boolean" },
+          isArchived: { type: "boolean" },
+          ownerId: { type: "string", format: "uuid" },
+          createdAt: { type: "string", format: "date-time" },
+          updatedAt: { type: "string", format: "date-time" },
+          permission: {
+            type: "string",
+            enum: ["OWNER", "READ", "EDIT"],
+            description: "Current user's permission on this note",
+          },
+          sharedBy: {
+            type: "object",
+            nullable: true,
+            description: "Owner info (only for shared notes)",
+            properties: {
+              email: { type: "string" },
+              name: { type: "string" },
+            },
+          },
+          sharedWith: {
+            type: "array",
+            description: "Collaborators (only for owned notes)",
+            items: {
+              type: "object",
+              properties: {
+                userId: { type: "string", format: "uuid" },
+                email: { type: "string" },
+                name: { type: "string" },
+                permission: { type: "string", enum: ["READ", "EDIT"] },
+              },
+            },
+          },
+        },
+      },
+      PaginationMeta: {
+        type: "object",
+        properties: {
+          page: { type: "integer", example: 1 },
+          limit: { type: "integer", example: 20 },
+          total: { type: "integer", example: 42 },
+          totalPages: { type: "integer", example: 3 },
         },
       },
       SharedNote: {

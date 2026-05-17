@@ -42,7 +42,7 @@ interface AppState {
     data: Partial<Pick<Note, "title" | "content" | "isPinned" | "isArchived">>
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
-  shareNote: (noteId: string, email: string) => Promise<void>;
+  shareNote: (noteId: string, email: string, permission?: "READ" | "EDIT") => Promise<void>;
 
   // Search
   searchQuery: string;
@@ -209,11 +209,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  shareNote: async (noteId, email) => {
+  shareNote: async (noteId, email, permission = "READ") => {
     const { user } = get();
     if (!user) return;
     try {
-      await apiShareNote(user.token, noteId, email);
+      await apiShareNote(user.token, noteId, email, permission);
       get().addToast(`Note shared with ${email}`, "success");
     } catch (err) {
       throw err; // Let ShareModal handle the display

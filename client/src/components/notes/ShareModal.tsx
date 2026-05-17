@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "../../context/AppContext";
-import { X, Check } from "lucide-react";
+import { X, Check, Eye, Pencil } from "lucide-react";
 import type { Note } from "../../api/notesApi";
 
 interface ShareModalProps {
@@ -12,6 +12,7 @@ interface ShareModalProps {
 export default function ShareModal({ note, onClose }: ShareModalProps) {
   const shareNote = useAppStore((s) => s.shareNote);
   const [email, setEmail] = useState("");
+  const [permission, setPermission] = useState<"READ" | "EDIT">("READ");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -34,13 +35,16 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
     setSuccess("");
 
     try {
-      await shareNote(note.id, email.trim());
-      setSuccess(`Shared with ${email.trim()}`);
+      await shareNote(note.id, email.trim(), permission);
+      const permLabel = permission === "EDIT" ? "edit" : "view";
+      setSuccess(`Shared with ${email.trim()} (can ${permLabel})`);
       setEmail("");
     } catch (err) {
-      // Backend returns clear messages: "No user exists with this email",
-      // "Note already shared with this user", "You cannot share a note with yourself", etc.
-      setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -48,6 +52,7 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
 
   function handleClose() {
     setEmail("");
+    setPermission("READ");
     setError("");
     setSuccess("");
     onClose();
@@ -92,7 +97,7 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
               style={{
                 pointerEvents: "auto",
                 width: "90vw",
-                maxWidth: 400,
+                maxWidth: 420,
                 background: "var(--bg-modal)",
                 borderRadius: "var(--radius-modal)",
                 boxShadow: "var(--shadow-modal)",
@@ -142,7 +147,7 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
               </div>
 
               {/* Email input */}
-              <div style={{ padding: "0 20px 16px" }}>
+              <div style={{ padding: "0 20px" }}>
                 <input
                   type="email"
                   placeholder="Enter the email you want to share with"
@@ -181,21 +186,57 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
                         "var(--border-input)";
                   }}
                 />
+              </div>
 
-                {/* Error */}
+              {/* Permission selector */}
+              <div style={{ padding: "12px 20px 0" }}>
+                <label
+                  style={{
+                    fontSize: "var(--text-xs)",
+                    color: "var(--text-muted)",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.6,
+                    marginBottom: 8,
+                    display: "block",
+                  }}
+                >
+                  Permission
+                </label>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 8,
+                  }}
+                >
+                  <PermissionOption
+                    active={permission === "READ"}
+                    icon={<Eye size={14} />}
+                    label="View only"
+                    onClick={() => setPermission("READ")}
+                  />
+                  <PermissionOption
+                    active={permission === "EDIT"}
+                    icon={<Pencil size={14} />}
+                    label="Can edit"
+                    onClick={() => setPermission("EDIT")}
+                  />
+                </div>
+              </div>
+
+              {/* Error / Success */}
+              <div style={{ padding: "0 20px 16px" }}>
                 {error && (
                   <p
                     style={{
                       fontSize: "var(--text-xs)",
                       color: "var(--color-danger)",
-                      marginTop: 8,
+                      marginTop: 10,
                     }}
                   >
                     {error}
                   </p>
                 )}
 
-                {/* Success */}
                 <AnimatePresence>
                   {success && (
                     <motion.div
@@ -207,7 +248,7 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
                         display: "flex",
                         alignItems: "center",
                         gap: 6,
-                        marginTop: 8,
+                        marginTop: 10,
                         color: "var(--color-shared)",
                         fontSize: "var(--text-sm)",
                       }}
@@ -295,5 +336,44 @@ export default function ShareModal({ note, onClose }: ShareModalProps) {
         </>
       )}
     </AnimatePresence>
+  );
+}
+
+// ─── Permission toggle button ───────────────
+
+function PermissionOption({
+  active,
+  icon,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  icon: React.ReactNode;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        flex: 1,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 7,
+        padding: "9px 0",
+        borderRadius: "var(--radius-input)",
+        border: `1.5px solid ${active ? "var(--accent)" : "var(--border-input)"}`,
+        background: active ? "rgba(254,185,0,0.08)" : "transparent",
+        color: active ? "var(--accent)" : "var(--text-secondary)",
+        fontSize: "var(--text-sm)",
+        fontWeight: active ? 600 : 400,
+        cursor: "pointer",
+        transition: "all 0.15s",
+      }}
+    >
+      {icon}
+      {label}
+    </button>
   );
 }

@@ -7,12 +7,21 @@ import {
   update,
   remove,
 } from "../controllers/note.controller";
-import { share } from "../controllers/share.controller";
+import {
+  share,
+  updatePermission,
+  revoke,
+  collaborators,
+} from "../controllers/share.controller";
 
 const router = Router();
 
 // All note routes require authentication
 router.use(authenticate as any);
+
+// ═══════════════════════════════════════════════
+//  NOTES CRUD
+// ═══════════════════════════════════════════════
 
 /**
  * @swagger
@@ -51,7 +60,12 @@ router.post("/", create);
  *   get:
  *     tags: [Notes]
  *     summary: List user's notes (owned + shared)
- *     description: Returns paginated, non-deleted notes that the user owns OR that have been shared with them. Supports optional text search.
+ *     description: |
+ *       Returns paginated, non-deleted notes that the user owns OR that have been shared with them.
+ *       Each note includes sharing metadata:
+ *       - `permission`: OWNER, READ, or EDIT
+ *       - `sharedBy`: owner info (for shared notes)
+ *       - `sharedWith`: collaborator list (for owned notes)
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -77,7 +91,7 @@ router.post("/", create);
  *         description: Optional search term for title and content
  *     responses:
  *       200:
- *         description: Paginated list of notes
+ *         description: Paginated list of notes with sharing metadata
  *         content:
  *           application/json:
  *             schema:
@@ -86,22 +100,9 @@ router.post("/", create);
  *                 notes:
  *                   type: array
  *                   items:
- *                     $ref: '#/components/schemas/Note'
+ *                     $ref: '#/components/schemas/NoteWithSharing'
  *                 meta:
- *                   type: object
- *                   properties:
- *                     page:
- *                       type: integer
- *                       example: 1
- *                     limit:
- *                       type: integer
- *                       example: 20
- *                     total:
- *                       type: integer
- *                       example: 42
- *                     totalPages:
- *                       type: integer
- *                       example: 3
+ *                   $ref: '#/components/schemas/PaginationMeta'
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:
@@ -115,7 +116,9 @@ router.get("/", list);
  *   get:
  *     tags: [Notes]
  *     summary: Get a note by ID
- *     description: Returns a single note if the user is the owner or has shared access.
+ *     description: |
+ *       Returns a single note if the user is the owner or has shared access (READ or EDIT).
+ *       Includes sharing metadata.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -132,7 +135,7 @@ router.get("/", list);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Note'
+ *               $ref: '#/components/schemas/NoteWithSharing'
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
@@ -154,7 +157,13 @@ router.get("/:id", getById);
  *   put:
  *     tags: [Notes]
  *     summary: Update a note
- *     description: Updates a note owned by the user. Saves a version snapshot before applying changes.
+ *     description: |
+ *       Updates a note. Allowed for:
+ *       - **Owner**: can update title, content, isPinned, isArchived
+ *       - **EDIT users**: can update title and content only
+ *       - **READ users**: rejected with 403
+ *
+ *       Saves a version snapshot before applying changes.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -177,13 +186,13 @@ router.get("/:id", getById);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Note'
+ *               $ref: '#/components/schemas/NoteWithSharing'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
- *         description: Only the note owner can update
+ *         description: User does not have EDIT permission
  *         content:
  *           application/json:
  *             schema:
@@ -201,7 +210,7 @@ router.put("/:id", update);
  *   delete:
  *     tags: [Notes]
  *     summary: Soft-delete a note
- *     description: Marks a note as deleted (soft delete). Only the owner can delete.
+ *     description: Marks a note as deleted (soft delete). **Owner only** — shared users cannot delete.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -230,13 +239,19 @@ router.put("/:id", update);
  */
 router.delete("/:id", remove);
 
+// ═══════════════════════════════════════════════
+//  SHARING & COLLABORATION
+// ═══════════════════════════════════════════════
+
 /**
  * @swagger
  * /notes/{id}/share:
  *   post:
  *     tags: [Sharing]
  *     summary: Share a note with another user
- *     description: Shares a note with a registered user by email. Only the note owner can share. Default permission is READ.
+ *     description: |
+ *       Shares a note with a registered user by email. **Owner only.**
+ *       Accepts an optional `permission` field (defaults to READ).
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -270,29 +285,173 @@ router.delete("/:id", remove);
  *         $ref: '#/components/responses/UnauthorizedError'
  *       403:
  *         description: Only the note owner can share
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               message: "You are not authorized to share this note"
  *       404:
  *         description: Note or recipient user not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
  *       409:
  *         description: Note already shared with this user
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             example:
- *               message: "Note already shared with this user"
  *       500:
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.post("/:id/share", share);
+
+/**
+ * @swagger
+ * /notes/{id}/collaborators:
+ *   get:
+ *     tags: [Sharing]
+ *     summary: Get collaborators for a note
+ *     description: Returns the owner and all users the note is shared with. **Owner only.**
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *     responses:
+ *       200:
+ *         description: Collaborators list
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 owner:
+ *                   type: object
+ *                   properties:
+ *                     email:
+ *                       type: string
+ *                 collaborators:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       userId:
+ *                         type: string
+ *                         format: uuid
+ *                       email:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       permission:
+ *                         type: string
+ *                         enum: [READ, EDIT]
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Only the note owner can view collaborators
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ */
+router.get("/:id/collaborators", collaborators);
+
+/**
+ * @swagger
+ * /notes/{id}/share/{sharedUserId}:
+ *   patch:
+ *     tags: [Sharing]
+ *     summary: Update a shared user's permission
+ *     description: Changes the permission (READ or EDIT) for a user the note is shared with. **Owner only.**
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *       - in: path
+ *         name: sharedUserId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User UUID whose permission is being changed
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [permission]
+ *             properties:
+ *               permission:
+ *                 type: string
+ *                 enum: [READ, EDIT]
+ *                 description: New permission level
+ *     responses:
+ *       200:
+ *         description: Permission updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Permission updated successfully"
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Only the note owner can update permissions
+ *       404:
+ *         description: Note or share entry not found
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.patch("/:id/share/:sharedUserId", updatePermission);
+
+/**
+ * @swagger
+ * /notes/{id}/share/{sharedUserId}:
+ *   delete:
+ *     tags: [Sharing]
+ *     summary: Revoke a shared user's access
+ *     description: Removes a user's access to a shared note. **Owner only.**
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *       - in: path
+ *         name: sharedUserId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: User UUID whose access is being revoked
+ *     responses:
+ *       200:
+ *         description: Access revoked successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Access revoked successfully"
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Only the note owner can revoke access
+ *       404:
+ *         description: Note or share entry not found
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete("/:id/share/:sharedUserId", revoke);
 
 export default router;

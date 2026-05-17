@@ -2,8 +2,8 @@ import prisma from "../lib/prisma";
 import { PAGINATION } from "../constants";
 import type { SearchQueryInput } from "../validators/search.validator";
 
-/** Fields returned to the client */
-const noteSelect = {
+/** Extended select that includes sharing metadata */
+const noteSelectWithSharing = {
   id: true,
   title: true,
   content: true,
@@ -12,7 +12,61 @@ const noteSelect = {
   createdAt: true,
   updatedAt: true,
   ownerId: true,
+  owner: {
+    select: { email: true, name: true },
+  },
+  sharedWith: {
+    select: {
+      sharedWithUserId: true,
+      permission: true,
+      sharedWithUser: {
+        select: { email: true, name: true },
+      },
+    },
+  },
 } as const;
+
+/** Format note response with sharing context */
+function formatNoteResponse(note: any, userId: string) {
+  const isNoteOwner = note.ownerId === userId;
+
+  const sharedBy =
+    !isNoteOwner && note.owner
+      ? { email: note.owner.email, name: note.owner.name }
+      : null;
+
+  const sharedWith =
+    isNoteOwner && note.sharedWith
+      ? note.sharedWith.map((s: any) => ({
+          userId: s.sharedWithUserId,
+          email: s.sharedWithUser.email,
+          name: s.sharedWithUser.name,
+          permission: s.permission,
+        }))
+      : [];
+
+  let permission: string = "OWNER";
+  if (!isNoteOwner && note.sharedWith) {
+    const share = note.sharedWith.find(
+      (s: any) => s.sharedWithUserId === userId
+    );
+    permission = share?.permission ?? "READ";
+  }
+
+  return {
+    id: note.id,
+    title: note.title,
+    content: note.content,
+    isPinned: note.isPinned,
+    isArchived: note.isArchived,
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt,
+    ownerId: note.ownerId,
+    permission,
+    sharedBy,
+    sharedWith,
+  };
+}
 
 /**
  * Full-text search across notes the user has access to (owned + shared).
@@ -49,7 +103,7 @@ export async function searchNotes(userId: string, query: SearchQueryInput) {
   const [notes, total] = await Promise.all([
     prisma.note.findMany({
       where,
-      select: noteSelect,
+      select: noteSelectWithSharing,
       orderBy: { updatedAt: "desc" },
       skip,
       take: limit,
@@ -58,7 +112,7 @@ export async function searchNotes(userId: string, query: SearchQueryInput) {
   ]);
 
   return {
-    notes,
+    notes: notes.map((n) => formatNoteResponse(n, userId)),
     meta: {
       page,
       limit,

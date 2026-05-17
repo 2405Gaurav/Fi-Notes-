@@ -67,6 +67,13 @@ export async function apiLogin(email: string, password: string) {
 
 // ─── Notes ───────────────────────────────────
 
+export interface SharedUser {
+  userId: string;
+  email: string;
+  name: string;
+  permission: "READ" | "EDIT";
+}
+
 export interface Note {
   id: string;
   title: string;
@@ -76,6 +83,12 @@ export interface Note {
   ownerId: string;
   createdAt: string;
   updatedAt: string;
+  /** Current user's role: OWNER, READ, or EDIT */
+  permission: "OWNER" | "READ" | "EDIT";
+  /** Who shared the note (non-null only for shared notes) */
+  sharedBy: { email: string; name: string } | null;
+  /** Collaborators list (non-empty only for owned notes) */
+  sharedWith: SharedUser[];
 }
 
 export interface PaginationMeta {
@@ -173,12 +186,13 @@ export async function apiDeleteNote(
 export async function apiShareNote(
   token: string,
   noteId: string,
-  email: string
+  email: string,
+  permission: "READ" | "EDIT" = "READ"
 ): Promise<{ message: string }> {
   const res = await fetch(`${API_BASE}/notes/${noteId}/share`, {
     method: "POST",
     headers: headers(token),
-    body: JSON.stringify({ share_with_email: email }),
+    body: JSON.stringify({ share_with_email: email, permission }),
   });
   return handleResponse<{ message: string }>(res);
 }

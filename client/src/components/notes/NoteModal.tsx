@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useAppStore } from "../../context/AppContext";
-import { X } from "lucide-react";
+import { X, Eye } from "lucide-react";
 
 export default function NoteModal() {
   const expandedNote = useAppStore((s) => s.expandedNote);
@@ -12,6 +12,12 @@ export default function NoteModal() {
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  // Permission checks
+  const canEdit =
+    expandedNote?.permission === "OWNER" ||
+    expandedNote?.permission === "EDIT";
+  const isReadOnly = expandedNote?.permission === "READ";
 
   // Sync local state when note opens
   useEffect(() => {
@@ -126,11 +132,13 @@ export default function NoteModal() {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="Title"
+                  readOnly={isReadOnly}
                   style={{
                     flex: 1,
                     fontSize: "var(--text-xl)",
                     fontWeight: 500,
                     color: "var(--text-primary)",
+                    cursor: isReadOnly ? "default" : undefined,
                   }}
                 />
                 <button
@@ -157,12 +165,30 @@ export default function NoteModal() {
                 </button>
               </div>
 
+              {/* Read-only banner */}
+              {isReadOnly && expandedNote?.sharedBy && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    padding: "8px 20px",
+                    fontSize: "var(--text-xs)",
+                    color: "var(--border-focus)",
+                  }}
+                >
+                  <Eye size={12} />
+                  View only · Shared by {expandedNote.sharedBy.name || expandedNote.sharedBy.email}
+                </div>
+              )}
+
               {/* Content */}
               <textarea
                 ref={contentRef}
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Take a note..."
+                readOnly={isReadOnly}
                 style={{
                   flex: 1,
                   minHeight: 100,
@@ -170,6 +196,7 @@ export default function NoteModal() {
                   fontSize: 14,
                   lineHeight: 1.6,
                   color: "var(--text-primary)",
+                  cursor: isReadOnly ? "default" : undefined,
                 }}
               />
 
@@ -213,45 +240,47 @@ export default function NoteModal() {
                       e.currentTarget.style.color = "var(--text-secondary)";
                     }}
                   >
-                    Cancel
+                    {isReadOnly ? "Close" : "Cancel"}
                   </button>
-                  <button
-                    onClick={handleSave}
-                    disabled={!isDirty || saving}
-                    style={{
-                      padding: "7px 22px",
-                      borderRadius: "var(--radius-pill)",
-                      fontSize: "var(--text-sm)",
-                      fontWeight: 600,
-                      background: "var(--accent)",
-                      color: "#202124",
-                      opacity: !isDirty || saving ? 0.4 : 1,
-                      cursor:
-                        !isDirty || saving ? "not-allowed" : "pointer",
-                      transition: "opacity 0.15s",
-                    }}
-                  >
-                    {saving ? (
-                      <motion.span
-                        animate={{ rotate: 360 }}
-                        transition={{
-                          repeat: Infinity,
-                          duration: 0.7,
-                          ease: "linear",
-                        }}
-                        style={{
-                          display: "inline-block",
-                          width: 14,
-                          height: 14,
-                          border: "2px solid #202124",
-                          borderTopColor: "transparent",
-                          borderRadius: "50%",
-                        }}
-                      />
-                    ) : (
-                      "Save"
-                    )}
-                  </button>
+                  {canEdit && (
+                    <button
+                      onClick={handleSave}
+                      disabled={!isDirty || saving}
+                      style={{
+                        padding: "7px 22px",
+                        borderRadius: "var(--radius-pill)",
+                        fontSize: "var(--text-sm)",
+                        fontWeight: 600,
+                        background: "var(--accent)",
+                        color: "#202124",
+                        opacity: !isDirty || saving ? 0.4 : 1,
+                        cursor:
+                          !isDirty || saving ? "not-allowed" : "pointer",
+                        transition: "opacity 0.15s",
+                      }}
+                    >
+                      {saving ? (
+                        <motion.span
+                          animate={{ rotate: 360 }}
+                          transition={{
+                            repeat: Infinity,
+                            duration: 0.7,
+                            ease: "linear",
+                          }}
+                          style={{
+                            display: "inline-block",
+                            width: 14,
+                            height: 14,
+                            border: "2px solid #202124",
+                            borderTopColor: "transparent",
+                            borderRadius: "50%",
+                          }}
+                        />
+                      ) : (
+                        "Save"
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -261,3 +290,4 @@ export default function NoteModal() {
     </AnimatePresence>
   );
 }
+

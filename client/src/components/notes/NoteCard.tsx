@@ -2,23 +2,21 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAppStore } from "../../context/AppContext";
 import type { Note } from "../../api/notesApi";
-import { Pin, Archive, Trash2, Users } from "lucide-react";
+import { Pin, Archive, Trash2, Users, Eye, Pencil } from "lucide-react";
 
 interface NoteCardProps {
   note: Note;
   onShare: (note: Note) => void;
-  readOnly?: boolean;
 }
 
-export default function NoteCard({ note, onShare, readOnly }: NoteCardProps) {
+export default function NoteCard({ note, onShare }: NoteCardProps) {
   const [hovered, setHovered] = useState(false);
   const setExpandedNote = useAppStore((s) => s.setExpandedNote);
   const updateNote = useAppStore((s) => s.updateNote);
   const deleteNote = useAppStore((s) => s.deleteNote);
-  const user = useAppStore((s) => s.user);
 
-  const isOwner = user && note.ownerId === user.email; // Approximate check — server enforces
-  const isShared = !isOwner; // If not owner, it's a shared note
+  const isOwner = note.permission === "OWNER";
+  const isShared = !isOwner;
 
   return (
     <motion.div
@@ -90,26 +88,78 @@ export default function NoteCard({ note, onShare, readOnly }: NoteCardProps) {
         </p>
       )}
 
-      {/* Shared badge */}
-      {isShared && (
-        <div
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            marginTop: 10,
-            padding: "3px 10px",
-            borderRadius: 12,
-            background: "rgba(129,201,149,0.15)",
-            color: "var(--color-shared)",
-            fontSize: "var(--text-xs)",
-            fontWeight: 500,
-          }}
-        >
-          <Users size={11} />
-          Shared
-        </div>
-      )}
+      {/* Sharing badges */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+        {/* Shared WITH ME badge — shows who shared it */}
+        {isShared && note.sharedBy && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "3px 10px",
+              borderRadius: 12,
+              background: "rgba(129,201,149,0.15)",
+              color: "var(--color-shared)",
+              fontSize: "var(--text-xs)",
+              fontWeight: 500,
+            }}
+          >
+            <Users size={11} />
+            Shared by {note.sharedBy.name || note.sharedBy.email}
+          </div>
+        )}
+
+        {/* Permission badge for shared notes */}
+        {isShared && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "3px 8px",
+              borderRadius: 12,
+              background:
+                note.permission === "EDIT"
+                  ? "rgba(254,185,0,0.12)"
+                  : "rgba(138,180,248,0.12)",
+              color:
+                note.permission === "EDIT"
+                  ? "var(--color-pinned)"
+                  : "var(--border-focus)",
+              fontSize: "var(--text-xs)",
+              fontWeight: 500,
+            }}
+          >
+            {note.permission === "EDIT" ? (
+              <Pencil size={10} />
+            ) : (
+              <Eye size={10} />
+            )}
+            {note.permission === "EDIT" ? "Can edit" : "View only"}
+          </div>
+        )}
+
+        {/* Owner badge — shows how many collaborators */}
+        {isOwner && note.sharedWith.length > 0 && (
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "3px 10px",
+              borderRadius: 12,
+              background: "rgba(129,201,149,0.15)",
+              color: "var(--color-shared)",
+              fontSize: "var(--text-xs)",
+              fontWeight: 500,
+            }}
+          >
+            <Users size={11} />
+            Shared with {note.sharedWith.length}
+          </div>
+        )}
+      </div>
 
       {/* Action Bar */}
       <motion.div
@@ -129,10 +179,21 @@ export default function NoteCard({ note, onShare, readOnly }: NoteCardProps) {
           borderTop: hovered ? "1px solid #3c3f41" : "1px solid transparent",
         }}
       >
-        {!readOnly && (
+        {/* Owner-only actions: Pin, Archive, Delete */}
+        {isOwner && (
           <>
             <ActionBtn
-              icon={<Pin size={16} fill={note.isPinned ? "var(--color-pinned)" : "none"} color={note.isPinned ? "var(--color-pinned)" : "var(--text-secondary)"} />}
+              icon={
+                <Pin
+                  size={16}
+                  fill={note.isPinned ? "var(--color-pinned)" : "none"}
+                  color={
+                    note.isPinned
+                      ? "var(--color-pinned)"
+                      : "var(--text-secondary)"
+                  }
+                />
+              }
               label={note.isPinned ? "Unpin" : "Pin"}
               onClick={() => updateNote(note.id, { isPinned: !note.isPinned })}
             />
@@ -150,11 +211,15 @@ export default function NoteCard({ note, onShare, readOnly }: NoteCardProps) {
             />
           </>
         )}
-        <ActionBtn
-          icon={<Users size={16} color="var(--text-secondary)" />}
-          label="Share"
-          onClick={() => onShare(note)}
-        />
+
+        {/* Share button — owner only (server enforces) */}
+        {isOwner && (
+          <ActionBtn
+            icon={<Users size={16} color="var(--text-secondary)" />}
+            label="Share"
+            onClick={() => onShare(note)}
+          />
+        )}
       </motion.div>
     </motion.div>
   );

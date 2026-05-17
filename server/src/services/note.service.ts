@@ -1,5 +1,6 @@
 import prisma from "../lib/prisma";
 import { PAGINATION } from "../constants";
+import { isOwner, canEditNote } from "./share.service";
 import type {
   CreateNoteInput,
   UpdateNoteInput,
@@ -32,6 +33,69 @@ const noteSelect = {
   ownerId: true,
 } as const;
 
+/** Extended select that includes sharing metadata for list/detail views */
+const noteSelectWithSharing = {
+  ...noteSelect,
+  owner: {
+    select: { email: true, name: true },
+  },
+  sharedWith: {
+    select: {
+      sharedWithUserId: true,
+      permission: true,
+      sharedWithUser: {
+        select: { email: true, name: true },
+      },
+    },
+  },
+} as const;
+
+// ─── Helpers: format response with sharing context ──
+
+function formatNoteResponse(
+  note: any,
+  userId: string
+) {
+  const isNoteOwner = note.ownerId === userId;
+
+  // Build sharing info
+  const sharedBy = !isNoteOwner && note.owner
+    ? { email: note.owner.email, name: note.owner.name }
+    : null;
+
+  const sharedWith = isNoteOwner && note.sharedWith
+    ? note.sharedWith.map((s: any) => ({
+        userId: s.sharedWithUserId,
+        email: s.sharedWithUser.email,
+        name: s.sharedWithUser.name,
+        permission: s.permission,
+      }))
+    : [];
+
+  // The user's own permission on this note
+  let permission: string = "OWNER";
+  if (!isNoteOwner && note.sharedWith) {
+    const share = note.sharedWith.find(
+      (s: any) => s.sharedWithUserId === userId
+    );
+    permission = share?.permission ?? "READ";
+  }
+
+  return {
+    id: note.id,
+    title: note.title,
+    content: note.content,
+    isPinned: note.isPinned,
+    isArchived: note.isArchived,
+    createdAt: note.createdAt,
+    updatedAt: note.updatedAt,
+    ownerId: note.ownerId,
+    permission,
+    sharedBy,
+    sharedWith,
+  };
+}
+
 // ─── CREATE ──────────────────────────────────
 
 export async function createNote(userId: string, data: CreateNoteInput) {
@@ -44,7 +108,7 @@ export async function createNote(userId: string, data: CreateNoteInput) {
     select: noteSelect,
   });
 
-  return note;
+  return { ...note, permission: "OWNER", sharedBy: null, sharedWith: [] };
 }
 
 // ─── LIST (owned + shared, non-deleted, paginated) ──
@@ -83,7 +147,7 @@ export async function listNotes(userId: string, query: NoteQueryInput) {
   const [notes, total] = await Promise.all([
     prisma.note.findMany({
       where,
-      select: noteSelect,
+      select: noteSelectWithSharing,
       orderBy: { updatedAt: "desc" },
       skip,
       take: limit,
@@ -92,7 +156,7 @@ export async function listNotes(userId: string, query: NoteQueryInput) {
   ]);
 
   return {
-    notes,
+    notes: notes.map((n) => formatNoteResponse(n, userId)),
     meta: {
       page,
       limit,
@@ -108,14 +172,8 @@ export async function getNoteById(noteId: string, userId: string) {
   const note = await prisma.note.findUnique({
     where: { id: noteId },
     select: {
-      ...noteSelect,
+      ...noteSelectWithSharing,
       isDeleted: true,
-      sharedWith: {
-        select: {
-          sharedWithUserId: true,
-          permission: true,
-        },
-      },
     },
   });
 
@@ -123,29 +181,28 @@ export async function getNoteById(noteId: string, userId: string) {
     throw new NoteError("Note not found", 404);
   }
 
-  // Check access: owner or shared user
-  const isOwner = note.ownerId === userId;
+  // Check access: owner or shared user (READ or EDIT)
+  const noteOwner = isOwner(note.ownerId, userId);
   const isShared = note.sharedWith.some(
     (s) => s.sharedWithUserId === userId
   );
 
-  if (!isOwner && !isShared) {
+  if (!noteOwner && !isShared) {
     throw new NoteError("You do not have access to this note", 403);
   }
 
-  // Strip internal sharedWith array before returning
-  const { sharedWith, isDeleted, ...noteData } = note;
-  return noteData;
+  const { isDeleted, ...noteData } = note;
+  return formatNoteResponse(noteData, userId);
 }
 
-// ─── UPDATE (owner only + version snapshot) ──
+// ─── UPDATE (owner + EDIT users, with version snapshot) ──
 
 export async function updateNote(
   noteId: string,
   userId: string,
   data: UpdateNoteInput
 ) {
-  // Fetch current note for ownership check + version snapshot
+  // Fetch current note for permission check + version snapshot
   const existing = await prisma.note.findUnique({
     where: { id: noteId },
     select: {
@@ -154,9 +211,15 @@ export async function updateNote(
       content: true,
       ownerId: true,
       isDeleted: true,
+      sharedWith: {
+        select: {
+          sharedWithUserId: true,
+          permission: true,
+        },
+      },
       versions: {
         select: { version: true },
-        orderBy: { version: "desc" },
+        orderBy: { version: "desc" as const },
         take: 1,
       },
     },
@@ -166,8 +229,24 @@ export async function updateNote(
     throw new NoteError("Note not found", 404);
   }
 
-  if (existing.ownerId !== userId) {
-    throw new NoteError("You do not have permission to update this note", 403);
+  // Owner OR EDIT-permissioned users can update
+  if (!canEditNote(existing.ownerId, userId, existing.sharedWith)) {
+    throw new NoteError(
+      "You do not have permission to edit this note",
+      403
+    );
+  }
+
+  // EDIT users can only change title and content, not pin/archive/etc.
+  if (!isOwner(existing.ownerId, userId)) {
+    const { title, content, ...ownerOnlyFields } = data as Record<string, unknown>;
+    const hasOwnerOnlyFields = Object.keys(ownerOnlyFields).length > 0;
+    if (hasOwnerOnlyFields) {
+      throw new NoteError(
+        "Shared users can only edit title and content",
+        403
+      );
+    }
   }
 
   // Determine next version number
@@ -190,11 +269,11 @@ export async function updateNote(
     return tx.note.update({
       where: { id: noteId },
       data,
-      select: noteSelect,
+      select: noteSelectWithSharing,
     });
   });
 
-  return updated;
+  return formatNoteResponse(updated, userId);
 }
 
 // ─── SOFT DELETE (owner only) ────────────────
@@ -209,8 +288,9 @@ export async function deleteNote(noteId: string, userId: string) {
     throw new NoteError("Note not found", 404);
   }
 
-  if (existing.ownerId !== userId) {
-    throw new NoteError("You do not have permission to delete this note", 403);
+  // Only owner can delete — never shared users
+  if (!isOwner(existing.ownerId, userId)) {
+    throw new NoteError("Only the note owner can delete this note", 403);
   }
 
   await prisma.note.update({
