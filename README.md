@@ -11,7 +11,7 @@ A production-grade, multi-user notes application with sharing, versioning, and f
 
 ### Prerequisites
 - Node.js 20+
-- PostgreSQL database (or [Neon](https://neon.tech) serverless)
+- PostgreSQL database (NeonDB works well with the direct Node setup)
 
 ### Server Setup
 
@@ -212,7 +212,7 @@ Global rate limiting via `express-rate-limit`:
 - Returns `429 Too Many Requests` with `Retry-After` header
 - Frontend parses the header and shows a human-readable wait time
 
-### 7. Simple Node Deployment
+### 7. Simple Node + NeonDB Deployment
 Deploy the backend as a standard Node service:
 ```bash
 cd server
@@ -227,6 +227,8 @@ Set these environment variables in your host:
 
 If the database is brand new, run `npm run db:push` once after the first deploy.
 The backend allows requests from any browser origin by default.
+
+> **Note**: I did not implement Docker-based deployment in this version. NeonDB needs a slightly different setup, and I left that path out because of the time constraint while I’m still learning how to implement it properly.
 
 ### 8. Frontend (React)
 A Google Keep-inspired dark-mode UI built with:
