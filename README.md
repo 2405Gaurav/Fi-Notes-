@@ -24,6 +24,28 @@ npx tsx src/scripts/seed.ts  # (Optional) Seed test data
 npm run dev              # Start on http://localhost:3000
 ```
 
+### 🔑 Demo Credentials
+
+After running the seed script, use these accounts to test:
+
+| Email | Password | Notes |
+|---|---|---|
+| `alice@test.com` | `password123` | 5 notes, shares "Project Roadmap Q3" with Bob |
+| `bob@test.com` | `password123` | 4 notes, has READ access to Alice's roadmap |
+| `charlie@test.com` | `password123` | 6 notes |
+
+> Or register a new account via `POST /register` with any `{email, password}`.
+
+### 🔐 Authentication Flow
+
+1. **Register** → `POST /register` with `{email, password}` → `201 Created`
+2. **Login** → `POST /login` with `{email, password}` → `200 OK` with `{access_token}`
+3. **Use token** → Add `Authorization: Bearer <access_token>` header to all protected endpoints
+4. **Token expiry** → JWT expires after **7 days** (configurable via `JWT_EXPIRES_IN` env var)
+5. **On expiry** → Client gets `401 Unauthorized`, redirects to login
+
+> **Note**: This app uses a single JWT access token (no refresh token). The 7-day expiry provides a good balance between security and convenience for this use case.
+
 ### Client Setup
 
 ```bash
