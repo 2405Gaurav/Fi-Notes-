@@ -62,7 +62,7 @@ npm run dev              # Start on http://localhost:5173
 | `DIRECT_URL` | Optional Prisma direct connection string; falls back to `DATABASE_URL` |
 | `JWT_SECRET` | Secret key for signing JWT tokens |
 | `PORT` | Server port (default: 3000) |
-| `CORS_ORIGIN` | Comma-separated allowed CORS origins |
+| `CORS` | Open to all browser origins by default |
 
 ---
 
@@ -223,10 +223,10 @@ npm start
 Set these environment variables in your host:
 - `DATABASE_URL`
 - `JWT_SECRET`
-- `CORS_ORIGIN`
 - optional `DIRECT_URL` for Prisma CLI tasks
 
 If the database is brand new, run `npm run db:push` once after the first deploy.
+The backend allows requests from any browser origin by default.
 
 ### 8. Frontend (React)
 A Google Keep-inspired dark-mode UI built with:
@@ -283,7 +283,7 @@ Client Request → Rate Limiter → CORS → JSON Parser → Auth Middleware →
 - **JWT authentication** — Signed tokens with configurable expiry
 - **Input validation** — Zod schemas on every endpoint
 - **Rate limiting** — 100 req/15min per IP
-- **CORS** — Configurable allowed origins
+- **CORS** — Open to all browser origins by default
 - **SQL injection prevention** — Prisma parameterized queries
 - **Authorization** — Service-layer permission checks (owner vs shared user)
 

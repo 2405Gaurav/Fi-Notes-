@@ -22,7 +22,7 @@ const app = express();
 // ─── Global Middleware ──────────────────────
 app.use(
   cors({
-    origin: config.corsOrigins,
+    origin: true,
     credentials: true,
   })
 );

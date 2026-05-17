@@ -14,24 +14,6 @@ function requireEnv(key: string): string {
   return value;
 }
 
-function parseCorsOrigins(value?: string): string[] {
-  const fallbackOrigins = [
-    "http://localhost:5173",
-    "https://fi-notes.vercel.app",
-  ];
-
-  if (!value) {
-    return fallbackOrigins;
-  }
-
-  const origins = value
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter((origin) => origin && origin !== "*");
-
-  return origins.length > 0 ? origins : fallbackOrigins;
-}
-
 export const config = {
   // Server
   port: Number(process.env.PORT) || 3000,
@@ -45,7 +27,4 @@ export const config = {
   // JWT
   jwtSecret: requireEnv("JWT_SECRET"),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
-
-  // CORS
-  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
 } as const;
