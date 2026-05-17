@@ -5,8 +5,6 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ─── OpenAPI 3.0 Definition ─────────────────
-
 const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
   openapi: "3.0.0",
   info: {
@@ -25,6 +23,10 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
   },
   servers: [
     {
+      url: "https://fi-notes-pu55.onrender.com",
+      description: "Production server",
+    },
+    {
       url: "http://localhost:3000",
       description: "Development server",
     },
@@ -37,18 +39,16 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
     { name: "Search", description: "Full-text note search" },
   ],
 
-  // ─── Reusable Components ────────────────────
   components: {
     securitySchemes: {
       bearerAuth: {
         type: "http",
         scheme: "bearer",
         bearerFormat: "JWT",
-        description: "Enter your JWT token obtained from POST /auth/login",
+        description: "Enter your JWT token obtained from POST /login",  // ← updated
       },
     },
     schemas: {
-      // ── Request Bodies ──
       RegisterRequest: {
         type: "object",
         required: ["name", "email", "password"],
@@ -128,8 +128,6 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
           },
         },
       },
-
-      // ── Response Bodies ──
       RegisterResponse: {
         type: "object",
         properties: {
@@ -156,6 +154,8 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
           ownerId: { type: "string", format: "uuid" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+          created_at: { type: "string", format: "date-time" },
+          updated_at: { type: "string", format: "date-time" },
         },
       },
       NoteWithSharing: {
@@ -169,6 +169,8 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
           ownerId: { type: "string", format: "uuid" },
           createdAt: { type: "string", format: "date-time" },
           updatedAt: { type: "string", format: "date-time" },
+          created_at: { type: "string", format: "date-time" },
+          updated_at: { type: "string", format: "date-time" },
           permission: {
             type: "string",
             enum: ["OWNER", "READ", "EDIT"],
@@ -228,8 +230,6 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
           createdAt: { type: "string", format: "date-time" },
         },
       },
-
-      // ── Error Responses ──
       ErrorResponse: {
         type: "object",
         properties: {
@@ -277,9 +277,7 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
         description: "Request body validation failed",
         content: {
           "application/json": {
-            schema: {
-              $ref: "#/components/schemas/ValidationErrorResponse",
-            },
+            schema: { $ref: "#/components/schemas/ValidationErrorResponse" },
           },
         },
       },
@@ -296,11 +294,8 @@ const swaggerDefinition: swaggerJsdoc.SwaggerDefinition = {
   },
 };
 
-// ─── swagger-jsdoc options ──────────────────
-
 const options: swaggerJsdoc.Options = {
   swaggerDefinition,
-  // Scan all route files for @swagger JSDoc annotations
   apis: [
     path.join(__dirname, "../routes/*.ts"),
     path.join(__dirname, "../routes/*.js"),
@@ -309,5 +304,4 @@ const options: swaggerJsdoc.Options = {
   ],
 };
 
-/** Auto-generated OpenAPI specification object */
 export const swaggerSpec = swaggerJsdoc(options);

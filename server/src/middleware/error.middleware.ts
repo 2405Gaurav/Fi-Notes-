@@ -93,6 +93,10 @@ export function errorHandler(
 
   // ── Fallback ──────────────────────────────
   console.error("Unhandled error:", err);
+  // ── Fallback ──────────────────────────────
+console.error("Unhandled error name:", err.name);
+console.error("Unhandled error message:", err.message);
+console.error("Unhandled error stack:", err.stack)
 
   res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
     message: "Internal server error",
