@@ -1,4 +1,4 @@
-const API_BASE = "https://fi-notes-pu55.onrender.com"; 
+const API_BASE = "https://fi-notes-pu55.onrender"; 
 
 /** Helper to build headers with optional auth token */
 function headers(token?: string | null): HeadersInit {

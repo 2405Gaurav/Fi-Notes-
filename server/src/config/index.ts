@@ -14,11 +14,30 @@ function requireEnv(key: string): string {
   return value;
 }
 
+function parseCorsOrigins(value?: string): string[] {
+  const fallbackOrigins = [
+    "http://localhost:5173",
+    "https://fi-notes.vercel.app",
+  ];
+
+  if (!value) {
+    return fallbackOrigins;
+  }
+
+  const origins = value
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter((origin) => origin && origin !== "*");
+
+  return origins.length > 0 ? origins : fallbackOrigins;
+}
+
 export const config = {
   // Server
   port: Number(process.env.PORT) || 3000,
   nodeEnv: process.env.NODE_ENV || "development",
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction:
+    process.env.NODE_ENV === "production" || process.env.RENDER === "true",
 
   // Database
   databaseUrl: requireEnv("DATABASE_URL"),
@@ -28,5 +47,5 @@ export const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
 
   // CORS
-  corsOrigin: process.env.CORS_ORIGIN || "http://localhost:5173",
+  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
 } as const;

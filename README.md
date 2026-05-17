@@ -59,9 +59,10 @@ npm run dev              # Start on http://localhost:5173
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
+| `DIRECT_URL` | Prisma direct database connection string |
 | `JWT_SECRET` | Secret key for signing JWT tokens |
 | `PORT` | Server port (default: 3000) |
-| `CORS_ORIGIN` | Allowed CORS origin (default: `http://localhost:5173`) |
+| `CORS_ORIGIN` | Comma-separated allowed CORS origins |
 
 ---
 

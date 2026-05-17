@@ -9,8 +9,8 @@ RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src/
-COPY scripts ./scripts/
 RUN npx prisma generate --schema=prisma/schema.prisma
+RUN npx prisma db push --skip-generate --schema=prisma/schema.prisma
 RUN npm run build
 
 # ─── Stage 2: Production ────────────────────

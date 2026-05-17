@@ -1,3 +1,4 @@
+import { config } from "../config/index.js"
 import { PrismaClient } from '../generated/prisma/client.js'
 import { PrismaNeon } from '@prisma/adapter-neon'
 
@@ -11,13 +12,13 @@ function createPrismaClient(): PrismaClient {
   })
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: config.isProduction ? ['error'] : ['query', 'error', 'warn'],
   })
 }
 
 const prisma = globalForPrisma.prisma ?? createPrismaClient()
 
-if (process.env.NODE_ENV !== 'production') {
+if (!config.isProduction) {
   globalForPrisma.prisma = prisma
 }
 
