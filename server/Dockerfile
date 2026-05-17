@@ -5,9 +5,8 @@ WORKDIR /app
 
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
-COPY prisma.config.ts ./
 RUN npm ci
-RUN npx prisma generate
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 COPY tsconfig.json ./
 COPY src ./src/
@@ -22,12 +21,12 @@ ENV NODE_ENV=production
 
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
-COPY prisma.config.ts ./
 RUN npm ci --omit=dev
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/src/server.js"]
