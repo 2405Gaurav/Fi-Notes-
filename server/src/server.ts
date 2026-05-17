@@ -108,7 +108,7 @@ app.get("/", (_req, res) => {
 app.get("/about", (_req, res) => {
   res.json({
     name: "Gaurav",
-    email: "gaurav@fimoney.in",
+    email: "gauravthakur83551@gmail.com",
     "my features": {
       "Role-Based Note Sharing":
         "Users can share notes with READ or EDIT permissions. Chose this to demonstrate granular access control — a must-have for any collaborative tool.",
