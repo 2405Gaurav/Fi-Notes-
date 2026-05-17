@@ -3,10 +3,10 @@ import {
   createNoteSchema,
   updateNoteSchema,
   noteQuerySchema,
-} from "../validators/note.validator";
-import * as noteService from "../services/note.service";
-import { HTTP_STATUS } from "../constants";
-import type { AuthRequest } from "../types";
+} from "../validators/note.validator.js";
+import * as noteService from "../services/note.service.js";
+import { HTTP_STATUS } from "../constants/index.js";
+import type { AuthRequest } from "../types/index.js";
 
 // ─── POST /notes ────────────────────────────
 

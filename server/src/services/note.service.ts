@@ -1,11 +1,11 @@
-import prisma from "../lib/prisma";
-import { PAGINATION } from "../constants";
-import { isOwner, canEditNote } from "./share.service";
+import prisma from "../lib/prisma.js";
+import { PAGINATION } from "../constants/index.js";
+import { isOwner, canEditNote } from "./share.service.js";
 import type {
   CreateNoteInput,
   UpdateNoteInput,
   NoteQueryInput,
-} from "../validators/note.validator";
+} from "../validators/note.validator.js";
 
 // ─── Custom error for note operations ────────
 

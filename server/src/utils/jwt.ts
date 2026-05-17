@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
-import { config } from "../config";
-import type { JwtPayload } from "../types";
+import { config } from "../config/index.js";
+import type { JwtPayload } from "../types/index.js";
 
 /**
  * Sign a JWT containing `{ userId, email }`.

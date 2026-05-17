@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticate } from "../middleware";
+import { authenticate } from "../middleware/index.js";
 import {
   create,
   list,
@@ -9,13 +9,13 @@ import {
   restore,
   permanentDelete,
   versions,
-} from "../controllers/note.controller";
+} from "../controllers/note.controller.js";
 import {
   share,
   updatePermission,
   revoke,
   collaborators,
-} from "../controllers/share.controller";
+} from "../controllers/share.controller.js";
 
 const router = Router();
 

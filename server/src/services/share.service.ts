@@ -1,10 +1,10 @@
-import prisma from "../lib/prisma";
-import { NoteError } from "./note.service";
-import type { SharePermission } from "../generated/prisma/client";
+import prisma from "../lib/prisma.js";
+import { NoteError } from "./note.service.js";
+import type { SharePermission } from "../generated/prisma/client.js";
 import type {
   ShareNoteInput,
   UpdatePermissionInput,
-} from "../validators/share.validator";
+} from "../validators/share.validator.js";
 
 // ═══════════════════════════════════════════════
 //  Permission Helpers — reusable across services

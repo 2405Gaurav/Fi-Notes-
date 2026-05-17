@@ -1,2 +1,2 @@
-export { authenticate } from "./auth.middleware";
-export { errorHandler } from "./error.middleware";
+export { authenticate } from "./auth.middleware.js";
+export { errorHandler } from "./error.middleware.js";

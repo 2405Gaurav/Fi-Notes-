@@ -1,6 +1,6 @@
-import prisma from "../lib/prisma";
-import { PAGINATION } from "../constants";
-import type { SearchQueryInput } from "../validators/search.validator";
+import prisma from "../lib/prisma.js";
+import { PAGINATION } from "../constants/index.js";
+import type { SearchQueryInput } from "../validators/search.validator.js";
 
 /** Extended select that includes sharing metadata */
 const noteSelectWithSharing = {

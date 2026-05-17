@@ -1,7 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
-import { registerSchema, loginSchema } from "../validators/auth.validator";
-import { registerUser, loginUser, AuthError } from "../services/auth.service";
-import { HTTP_STATUS } from "../constants";
+import { registerSchema, loginSchema } from "../validators/auth.validator.js";
+import { registerUser, loginUser, AuthError } from "../services/auth.service.js";
+import { HTTP_STATUS } from "../constants/index.js";
 
 // ─── POST /auth/register ────────────────────
 

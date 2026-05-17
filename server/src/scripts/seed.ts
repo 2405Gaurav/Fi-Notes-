@@ -1,6 +1,6 @@
 import "dotenv/config";
-import prisma from "../lib/prisma";
-import { hashPassword } from "../utils";
+import prisma from "../lib/prisma.js";
+import { hashPassword } from "../utils/index.js";
 
 /**
  * Seed script — creates 3 test users with notes for each.

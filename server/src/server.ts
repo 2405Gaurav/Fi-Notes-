@@ -1,20 +1,20 @@
-import { config } from "./config";
+import { config } from "./config/index.js";
 import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
-import prisma from "./lib/prisma";
+import prisma from "./lib/prisma.js";
 
 // ─── Route Modules ──────────────────────────
-import authRoutes from "./routes/auth.routes";
-import noteRoutes from "./routes/note.routes";
-import searchRoutes from "./routes/search.routes";
+import authRoutes from "./routes/auth.routes.js";
+import noteRoutes from "./routes/note.routes.js";
+import searchRoutes from "./routes/search.routes.js";
 
 // ─── Middleware ──────────────────────────────
-import { errorHandler } from "./middleware";
+import { errorHandler } from "./middleware/index.js";
 
 // ─── Swagger / OpenAPI ──────────────────────
 import swaggerUi from "swagger-ui-express";
-import { swaggerSpec } from "./docs/swagger";
+import { swaggerSpec } from "./docs/swagger.js";
 
 // ─── Express App ────────────────────────────
 const app = express();

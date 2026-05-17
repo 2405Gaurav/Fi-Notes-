@@ -1,6 +1,6 @@
-import prisma from "../lib/prisma";
-import { hashPassword, comparePassword, signToken } from "../utils";
-import type { RegisterInput, LoginInput } from "../validators/auth.validator";
+import prisma from "../lib/prisma.js";
+import { hashPassword, comparePassword, signToken } from "../utils/index.js";
+import type { RegisterInput, LoginInput } from "../validators/auth.validator.js";
 
 // ─── Custom error for known business-logic failures ──────
 

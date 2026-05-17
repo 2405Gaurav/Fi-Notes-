@@ -1,8 +1,8 @@
 import type { Request, Response, NextFunction } from "express";
 import { ZodError } from "zod";
-import { AuthError } from "../services/auth.service";
-import { NoteError } from "../services/note.service";
-import { HTTP_STATUS } from "../constants";
+import { AuthError } from "../services/auth.service.js";
+import { NoteError } from "../services/note.service.js";
+import { HTTP_STATUS } from "../constants/index.js";
 
 /**
  * Global error-handling middleware.

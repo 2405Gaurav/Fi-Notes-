@@ -1,7 +1,7 @@
 import type { Response, NextFunction } from "express";
-import { verifyToken } from "../utils";
-import { HTTP_STATUS } from "../constants";
-import type { AuthRequest } from "../types";
+import { verifyToken } from "../utils/index.js";
+import { HTTP_STATUS } from "../constants/index.js";
+import type { AuthRequest } from "../types/index.js";
 
 /**
  * Express middleware that protects routes behind JWT authentication.

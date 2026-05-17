@@ -1,8 +1,8 @@
 import type { Response, NextFunction } from "express";
-import { searchQuerySchema } from "../validators/search.validator";
-import { searchNotes } from "../services/search.service";
-import { HTTP_STATUS } from "../constants";
-import type { AuthRequest } from "../types";
+import { searchQuerySchema } from "../validators/search.validator.js";
+import { searchNotes } from "../services/search.service.js";
+import { HTTP_STATUS } from "../constants/index.js";
+import type { AuthRequest } from "../types/index.js";
 
 // ─── GET /search?q=keyword ──────────────────
 

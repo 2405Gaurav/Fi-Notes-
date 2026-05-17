@@ -3,15 +3,15 @@ import {
   shareNoteSchema,
   updatePermissionSchema,
   shareParamsSchema,
-} from "../validators/share.validator";
+} from "../validators/share.validator.js";
 import {
   shareNote,
   updateSharePermission,
   revokeShare,
   getCollaborators,
-} from "../services/share.service";
-import { HTTP_STATUS } from "../constants";
-import type { AuthRequest } from "../types";
+} from "../services/share.service.js";
+import { HTTP_STATUS } from "../constants/index.js";
+import type { AuthRequest } from "../types/index.js";
 
 // ─── POST /notes/:id/share ──────────────────
 
