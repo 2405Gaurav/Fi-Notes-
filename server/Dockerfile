@@ -24,9 +24,8 @@ COPY prisma ./prisma/
 RUN npm ci --omit=dev
 RUN npx prisma generate --schema=prisma/schema.prisma
 
-COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/src/server.js"]
+CMD ["node", "dist/server.js"]

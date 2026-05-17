@@ -5,12 +5,11 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  // Connection URL injected via prisma.config.ts → DATABASE_URL
 }
 
 // ─── Enums ──────────────────────────────────
