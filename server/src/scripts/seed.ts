@@ -96,9 +96,9 @@ const seedData: SeedUser[] = [
         isPinned: true,
       },
       {
-        title: "Docker Commands Cheatsheet",
+        title: "Deployment Commands Cheatsheet",
         content:
-          "docker build -t app .\ndocker run -p 3000:3000 app\ndocker compose up -d\ndocker compose down\ndocker logs -f container_name\ndocker exec -it container_name sh\ndocker system prune -a",
+          "npm run build\nnpm start\nnpm run db:generate\nnpm run db:push\nnpm run db:seed\nnpm run db:studio",
       },
       {
         title: "Ideas for Side Projects",

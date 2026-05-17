@@ -67,8 +67,8 @@ app.get("/about", (_req, res) => {
         "Notes go to trash first (soft delete), can be restored, or permanently deleted. Prevents accidental data loss.",
       "Full-Text Search":
         "Case-insensitive search across titles and content with pagination. Searches both owned and shared notes.",
-      "Dockerized Backend":
-        "Multi-stage Docker build for production deployment. Slim image with only production dependencies.",
+      "Production Build Pipeline":
+        "TypeScript build plus Prisma asset copying for simple Node deployments on Render or similar hosts.",
     },
   });
 });

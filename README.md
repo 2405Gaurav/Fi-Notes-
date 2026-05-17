@@ -59,7 +59,7 @@ npm run dev              # Start on http://localhost:5173
 | Variable | Description |
 |---|---|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `DIRECT_URL` | Prisma direct database connection string |
+| `DIRECT_URL` | Optional Prisma direct connection string; falls back to `DATABASE_URL` |
 | `JWT_SECRET` | Secret key for signing JWT tokens |
 | `PORT` | Server port (default: 3000) |
 | `CORS_ORIGIN` | Comma-separated allowed CORS origins |
@@ -212,13 +212,21 @@ Global rate limiting via `express-rate-limit`:
 - Returns `429 Too Many Requests` with `Retry-After` header
 - Frontend parses the header and shows a human-readable wait time
 
-### 7. Dockerized Backend
-Multi-stage Docker build for production:
+### 7. Simple Node Deployment
+Deploy the backend as a standard Node service:
 ```bash
 cd server
-docker build -t fi-notes-server .
-docker run -p 3000:3000 --env-file .env fi-notes-server
+npm run build
+npm start
 ```
+
+Set these environment variables in your host:
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `CORS_ORIGIN`
+- optional `DIRECT_URL` for Prisma CLI tasks
+
+If the database is brand new, run `npm run db:push` once after the first deploy.
 
 ### 8. Frontend (React)
 A Google Keep-inspired dark-mode UI built with:
@@ -250,8 +258,6 @@ server/
 │   └── validators/      # Zod schemas for request validation
 ├── prisma/
 │   └── schema.prisma    # Database schema
-├── Dockerfile           # Multi-stage production build
-└── .dockerignore
 
 client/
 ├── src/
@@ -321,4 +327,4 @@ Client Request → Rate Limiter → CORS → JSON Parser → Auth Middleware →
 | Frontend | React 19 + Vite |
 | State | Zustand |
 | Animations | Framer Motion |
-| Containerization | Docker (multi-stage) |
+| Deployment | Node.js + Render |

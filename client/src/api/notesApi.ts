@@ -1,4 +1,4 @@
-const API_BASE = "https://fi-notes-pu55.onrender"; 
+const API_BASE = import.meta.env.VITE_API_BASE ?? "http://localhost:3000";
 
 /** Helper to build headers with optional auth token */
 function headers(token?: string | null): HeadersInit {
@@ -260,4 +260,3 @@ export async function apiGetNoteVersions(
   });
   return handleResponse<VersionsResponse>(res);
 }
-

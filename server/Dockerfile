@@ -9,8 +9,8 @@ RUN npm ci
 
 COPY tsconfig.json ./
 COPY src ./src/
+COPY scripts ./scripts/
 RUN npx prisma generate --schema=prisma/schema.prisma
-RUN npx prisma db push --skip-generate --schema=prisma/schema.prisma
 RUN npm run build
 
 # ─── Stage 2: Production ────────────────────
@@ -23,9 +23,10 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci --omit=dev
+RUN npx prisma generate --schema=prisma/schema.prisma
 
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/server.js"]
+CMD ["sh", "-c", "npx prisma db push --schema=prisma/schema.prisma && node dist/src/server.js"]
