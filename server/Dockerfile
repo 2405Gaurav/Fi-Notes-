@@ -6,6 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci
+RUN npx prisma generate        # ← before tsc
 
 COPY tsconfig.json ./
 COPY src ./src/
@@ -21,6 +22,7 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci --omit=dev
+RUN npx prisma generate        # ← before runtime
 
 COPY --from=builder /app/dist ./dist
 
