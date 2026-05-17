@@ -6,10 +6,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci
-RUN npx prisma generate --schema=prisma/schema.prisma
 
 COPY tsconfig.json ./
 COPY src ./src/
+COPY scripts ./scripts/
+RUN npx prisma generate --schema=prisma/schema.prisma
 RUN npm run build
 
 # ─── Stage 2: Production ────────────────────
@@ -22,7 +23,6 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci --omit=dev
-RUN npx prisma generate --schema=prisma/schema.prisma
 
 COPY --from=builder /app/dist ./dist
 

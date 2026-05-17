@@ -2,10 +2,11 @@
   "name": "server",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/src/server.js",
+  "main": "dist/server.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/src/server.js",
+    "postbuild": "node scripts/copy-generated.mjs",
+    "start": "node dist/server.js",
     "dev": "tsx watch src/server.ts",
     "db:generate": "npx prisma generate --schema=prisma/schema.prisma",
     "db:push": "npx prisma db push",
