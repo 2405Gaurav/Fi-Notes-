@@ -60,28 +60,48 @@ router.post("/", create);
  *         schema:
  *           type: integer
  *           default: 1
+ *           minimum: 1
  *         description: Page number
  *       - in: query
  *         name: limit
  *         schema:
  *           type: integer
  *           default: 20
+ *           minimum: 1
  *           maximum: 100
  *         description: Items per page
  *       - in: query
  *         name: search
  *         schema:
  *           type: string
- *         description: Search term for title and content
+ *         description: Optional search term for title and content
  *     responses:
  *       200:
- *         description: List of notes
+ *         description: Paginated list of notes
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Note'
+ *               type: object
+ *               properties:
+ *                 notes:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Note'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                       example: 1
+ *                     limit:
+ *                       type: integer
+ *                       example: 20
+ *                     total:
+ *                       type: integer
+ *                       example: 42
+ *                     totalPages:
+ *                       type: integer
+ *                       example: 3
  *       401:
  *         $ref: '#/components/responses/UnauthorizedError'
  *       500:

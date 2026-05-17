@@ -13,6 +13,7 @@ import {
   Archive,
   Trash2,
   Search,
+  Loader2,
 } from "lucide-react";
 
 const containerVariants = {
@@ -67,37 +68,32 @@ export default function NotesGrid() {
   const activeView = useAppStore((s) => s.activeView);
   const searchQuery = useAppStore((s) => s.searchQuery);
   const notesLoading = useAppStore((s) => s.notesLoading);
+  const loadingMore = useAppStore((s) => s.loadingMore);
+  const notesMeta = useAppStore((s) => s.notesMeta);
+  const loadMoreNotes = useAppStore((s) => s.loadMoreNotes);
+
+  // Search state
+  const searchResults = useAppStore((s) => s.searchResults);
+  const searchMeta = useAppStore((s) => s.searchMeta);
+  const searchLoading = useAppStore((s) => s.searchLoading);
+  const searchLoadingMore = useAppStore((s) => s.searchLoadingMore);
+  const loadMoreSearch = useAppStore((s) => s.loadMoreSearch);
+
   const [shareTarget, setShareTarget] = useState<Note | null>(null);
 
   const isSearching = searchQuery.trim().length > 0;
 
-  // Filter notes based on view + search
+  // Filter notes based on view (when not searching)
   const filtered = useMemo(() => {
+    if (isSearching) return []; // Not used during search
+
     let result = notes;
-    const q = searchQuery.toLowerCase().trim();
 
-    // Apply search across all notes
-    if (isSearching) {
-      result = result.filter(
-        (n) =>
-          n.title.toLowerCase().includes(q) ||
-          n.content.toLowerCase().includes(q)
-      );
-      return result;
-    }
-
-    // Apply view filter
     switch (activeView) {
       case "notes":
-        // Non-archived, non-deleted (backend already filters deleted)
         result = result.filter((n) => !n.isArchived);
         break;
       case "shared":
-        // Notes not owned by me (meaning they were shared with me)
-        // Since backend returns both owned + shared, and we don't have ownerId = currentUser mapping,
-        // we'll infer: if we don't know the user's ID, we just show all (server handles access)
-        // For a proper implementation we'd compare ownerId, but we only have email.
-        // Show all non-archived for now; shared badge shows on cards where ownerId !== user
         result = result.filter((n) => !n.isArchived);
         break;
       case "pinned":
@@ -107,13 +103,12 @@ export default function NotesGrid() {
         result = result.filter((n) => n.isArchived);
         break;
       case "trash":
-        // Trash is handled server-side via soft delete
         result = [];
         break;
     }
 
     return result;
-  }, [notes, activeView, searchQuery, isSearching]);
+  }, [notes, activeView, isSearching]);
 
   // For "notes" view: split pinned vs others
   const pinned = useMemo(
@@ -133,10 +128,18 @@ export default function NotesGrid() {
 
   const config = viewConfig[activeView] || viewConfig.notes;
 
+  // The data to render — either search results or filtered notes
+  const displayNotes = isSearching ? searchResults : others;
+  const isLoading = isSearching ? searchLoading : notesLoading;
+  const isLoadingMore = isSearching ? searchLoadingMore : loadingMore;
+  const meta = isSearching ? searchMeta : notesMeta;
+  const hasMore = meta ? meta.page < meta.totalPages : false;
+  const handleLoadMore = isSearching ? loadMoreSearch : loadMoreNotes;
+
   return (
     <>
-      {/* Section heading */}
-      {isSearching ? (
+      {/* Search heading */}
+      {isSearching && !searchLoading && searchMeta && (
         <motion.div
           key="search-heading"
           initial={{ opacity: 0, y: -8 }}
@@ -144,22 +147,31 @@ export default function NotesGrid() {
           transition={{ duration: 0.2 }}
           style={{
             padding: "0 16px 16px",
-            fontSize: "var(--text-sm)",
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: 0.8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
           }}
         >
-          <Search
-            size={13}
-            style={{ marginRight: 6, verticalAlign: "middle" }}
-          />
-          Search results for: "{searchQuery}"
+          <span
+            style={{
+              fontSize: "var(--text-sm)",
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: 0.8,
+            }}
+          >
+            <Search
+              size={13}
+              style={{ marginRight: 6, verticalAlign: "middle" }}
+            />
+            {searchMeta.total} result{searchMeta.total !== 1 ? "s" : ""} for "
+            {searchQuery}"
+          </span>
         </motion.div>
-      ) : null}
+      )}
 
       {/* Loading skeletons */}
-      {notesLoading && (
+      {isLoading && (
         <div className="notes-grid">
           {Array.from({ length: 6 }).map((_, i) => (
             <SkeletonCard key={i} />
@@ -168,7 +180,7 @@ export default function NotesGrid() {
       )}
 
       {/* Empty state */}
-      {!notesLoading && filtered.length === 0 && (
+      {!isLoading && (isSearching ? searchResults.length === 0 && searchMeta : filtered.length === 0) && (
         <EmptyState
           icon={isSearching ? Search : config.icon}
           title={
@@ -183,10 +195,10 @@ export default function NotesGrid() {
       )}
 
       {/* Notes grid */}
-      {!notesLoading && filtered.length > 0 && (
+      {!isLoading && (
         <>
-          {/* Pinned section */}
-          {pinned.length > 0 && (
+          {/* Pinned section (only for notes view, not searching) */}
+          {pinned.length > 0 && !isSearching && (
             <>
               <div
                 style={{
@@ -231,21 +243,94 @@ export default function NotesGrid() {
             </>
           )}
 
-          {/* Other notes */}
-          <motion.div
-            className="notes-grid"
-            variants={containerVariants}
-            initial="hidden"
-            animate="show"
-          >
-            <AnimatePresence>
-              {others.map((note) => (
-                <motion.div key={note.id} variants={childVariants}>
-                  <NoteCard note={note} onShare={setShareTarget} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+          {/* Main notes list */}
+          {displayNotes.length > 0 && (
+            <motion.div
+              className="notes-grid"
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+            >
+              <AnimatePresence>
+                {displayNotes.map((note) => (
+                  <motion.div key={note.id} variants={childVariants}>
+                    <NoteCard note={note} onShare={setShareTarget} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          )}
+
+          {/* Load More button */}
+          {hasMore && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                padding: "24px 0",
+              }}
+            >
+              <button
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "10px 28px",
+                  borderRadius: "var(--radius-pill)",
+                  border: "1px solid var(--border-card)",
+                  background: "var(--bg-card)",
+                  color: "var(--text-secondary)",
+                  fontSize: "var(--text-sm)",
+                  fontWeight: 500,
+                  cursor: isLoadingMore ? "not-allowed" : "pointer",
+                  opacity: isLoadingMore ? 0.6 : 1,
+                  transition: "background 0.12s, opacity 0.12s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!isLoadingMore)
+                    e.currentTarget.style.background = "var(--bg-card-hover)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--bg-card)";
+                }}
+              >
+                {isLoadingMore ? (
+                  <>
+                    <Loader2
+                      size={16}
+                      style={{ animation: "spin 0.7s linear infinite" }}
+                    />
+                    Loading...
+                  </>
+                ) : (
+                  <>
+                    Load more
+                    {meta && (
+                      <span style={{ color: "var(--text-muted)" }}>
+                        ({meta.page * meta.limit} of {meta.total})
+                      </span>
+                    )}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Pagination info */}
+          {meta && meta.total > 0 && !hasMore && displayNotes.length > 0 && (
+            <div
+              style={{
+                textAlign: "center",
+                padding: "16px 0",
+                fontSize: "var(--text-xs)",
+                color: "var(--text-muted)",
+              }}
+            >
+              Showing all {meta.total} note{meta.total !== 1 ? "s" : ""}
+            </div>
+          )}
         </>
       )}
 

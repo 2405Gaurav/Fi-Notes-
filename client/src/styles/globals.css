@@ -182,3 +182,13 @@ textarea {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
 }
+
+/* ─── Spinner Utility ────────────────────── */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

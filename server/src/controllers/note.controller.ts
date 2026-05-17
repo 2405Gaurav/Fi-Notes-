@@ -56,7 +56,7 @@ export async function list(
 
     const result = await noteService.listNotes(req.user!.userId, parsed.data);
 
-    res.status(HTTP_STATUS.OK).json(result.notes);
+    res.status(HTTP_STATUS.OK).json(result);
   } catch (err) {
     next(err);
   }

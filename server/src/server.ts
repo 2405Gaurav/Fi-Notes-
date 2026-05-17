@@ -6,6 +6,7 @@ import prisma from "./lib/prisma";
 // ─── Route Modules ──────────────────────────
 import authRoutes from "./routes/auth.routes";
 import noteRoutes from "./routes/note.routes";
+import searchRoutes from "./routes/search.routes";
 
 // ─── Middleware ──────────────────────────────
 import { errorHandler } from "./middleware";
@@ -118,8 +119,7 @@ app.get("/about", (_req, res) => {
 // ─── API Routes ─────────────────────────────
 app.use("/auth", authRoutes);
 app.use("/notes", noteRoutes);
-// TODO: Mount remaining route modules
-// app.use("/search", searchRoutes);
+app.use("/search", searchRoutes);
 
 // ─── 404 catch-all ──────────────────────────
 app.use((_req, res) => {

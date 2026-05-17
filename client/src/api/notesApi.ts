@@ -78,11 +78,53 @@ export interface Note {
   updatedAt: string;
 }
 
-export async function apiFetchNotes(token: string): Promise<Note[]> {
-  const res = await fetch(`${API_BASE}/notes`, {
+export interface PaginationMeta {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  query?: string;
+}
+
+export interface PaginatedResponse {
+  notes: Note[];
+  meta: PaginationMeta;
+}
+
+export async function apiFetchNotes(
+  token: string,
+  page = 1,
+  limit = 20,
+  search?: string
+): Promise<PaginatedResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  if (search) params.set("search", search);
+
+  const res = await fetch(`${API_BASE}/notes?${params}`, {
     headers: headers(token),
   });
-  return handleResponse<Note[]>(res);
+  return handleResponse<PaginatedResponse>(res);
+}
+
+export async function apiSearchNotes(
+  token: string,
+  q: string,
+  page = 1,
+  limit = 20
+): Promise<PaginatedResponse> {
+  const params = new URLSearchParams({
+    q,
+    page: String(page),
+    limit: String(limit),
+  });
+
+  const res = await fetch(`${API_BASE}/search?${params}`, {
+    headers: headers(token),
+  });
+  return handleResponse<PaginatedResponse>(res);
 }
 
 export async function apiCreateNote(
@@ -121,7 +163,7 @@ export async function apiDeleteNote(
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
     throw new Error(
-      (data as { message?: string }).message || `Error ${res.status}`
+      (data as { message?: string }).message || "Something went wrong. Please try again."
     );
   }
 }
@@ -140,3 +182,4 @@ export async function apiShareNote(
   });
   return handleResponse<{ message: string }>(res);
 }
+
