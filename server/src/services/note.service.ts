@@ -111,7 +111,7 @@ export async function createNote(userId: string, data: CreateNoteInput) {
   return { ...note, permission: "OWNER", sharedBy: null, sharedWith: [] };
 }
 
-// ─── LIST (owned + shared, non-deleted, paginated) ──
+// ─── LIST (owned + shared, paginated, trash-aware) ──
 
 export async function listNotes(userId: string, query: NoteQueryInput) {
   const page = query.page ?? PAGINATION.DEFAULT_PAGE;
@@ -121,14 +121,19 @@ export async function listNotes(userId: string, query: NoteQueryInput) {
   );
   const skip = (page - 1) * limit;
 
-  // Base filter: (owned OR shared-with-me) AND not deleted
-  const accessFilter = [
-    { ownerId: userId },
-    { sharedWith: { some: { sharedWithUserId: userId } } },
-  ];
+  const isTrash = query.deleted === true;
+
+  // Trash: only show own deleted notes (shared notes can't be trashed by recipient)
+  // Normal: show owned + shared, non-deleted
+  const accessFilter = isTrash
+    ? [{ ownerId: userId }]
+    : [
+        { ownerId: userId },
+        { sharedWith: { some: { sharedWithUserId: userId } } },
+      ];
 
   const where: Record<string, unknown> = {
-    isDeleted: false,
+    isDeleted: isTrash,
     OR: accessFilter,
   };
 
