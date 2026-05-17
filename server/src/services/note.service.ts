@@ -89,6 +89,9 @@ function formatNoteResponse(
     isArchived: note.isArchived,
     createdAt: note.createdAt,
     updatedAt: note.updatedAt,
+    // Snake-case aliases for assignment spec compatibility
+    created_at: note.createdAt,
+    updated_at: note.updatedAt,
     ownerId: note.ownerId,
     permission,
     sharedBy,
@@ -108,7 +111,14 @@ export async function createNote(userId: string, data: CreateNoteInput) {
     select: noteSelect,
   });
 
-  return { ...note, permission: "OWNER", sharedBy: null, sharedWith: [] };
+  return {
+    ...note,
+    created_at: note.createdAt,
+    updated_at: note.updatedAt,
+    permission: "OWNER",
+    sharedBy: null,
+    sharedWith: [],
+  };
 }
 
 // ─── LIST (owned + shared, paginated, trash-aware) ──

@@ -107,28 +107,32 @@ app.get("/", (_req, res) => {
  */
 app.get("/about", (_req, res) => {
   res.json({
-    name: "Fi Money Notes API",
-    version: "1.0.0",
-    description:
-      "A multi-user notes application with sharing, versioning, and search",
-    endpoints: [
-      "POST /auth/register",
-      "POST /auth/login",
-      "GET /notes",
-      "GET /notes/:id",
-      "POST /notes",
-      "PUT /notes/:id",
-      "DELETE /notes/:id",
-      "POST /notes/:id/share",
-      "GET /search",
-      "GET /about",
-      "GET /openapi.json",
-    ],
+    name: "Gaurav",
+    email: "gaurav@fimoney.in",
+    "my features": {
+      "Role-Based Note Sharing":
+        "Users can share notes with READ or EDIT permissions. Chose this to demonstrate granular access control — a must-have for any collaborative tool.",
+      "Note Version History":
+        "Every edit creates an immutable snapshot. Users can browse paginated version history to see past states of their notes.",
+      "Rate Limiting":
+        "Global rate limiting (100 req/15min per IP) using express-rate-limit. Essential for production security against abuse.",
+      "Soft Delete & Restore":
+        "Notes go to trash first (soft delete), can be restored, or permanently deleted. Prevents accidental data loss.",
+      "Full-Text Search":
+        "Case-insensitive search across titles and content with pagination. Searches both owned and shared notes.",
+      "Dockerized Backend":
+        "Multi-stage Docker build for production deployment. Slim image with only production dependencies.",
+    },
   });
 });
 
 // ─── API Routes ─────────────────────────────
+
+// Root-level auth (required by assignment spec: POST /register, POST /login)
+app.use("/", authRoutes);
+// Also keep /auth/* working for frontend compatibility
 app.use("/auth", authRoutes);
+
 app.use("/notes", noteRoutes);
 app.use("/search", searchRoutes);
 

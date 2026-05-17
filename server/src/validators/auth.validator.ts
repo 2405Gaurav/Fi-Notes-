@@ -8,10 +8,11 @@ import { z } from "zod";
  */
 export const registerSchema = z.object({
   name: z
-    .string({ error: "Name is required" })
+    .string()
     .trim()
-    .min(1, "Name is required")
-    .max(100, "Name must be at most 100 characters"),
+    .max(100, "Name must be at most 100 characters")
+    .optional()
+    .default(""),
 
   email: z
     .string({ error: "Email is required" })
@@ -21,10 +22,7 @@ export const registerSchema = z.object({
 
   password: z
     .string({ error: "Password is required" })
-    .min(8, "Password must be at least 8 characters")
-    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
-    .regex(/[a-z]/, "Password must contain at least one lowercase letter")
-    .regex(/[0-9]/, "Password must contain at least one digit"),
+    .min(1, "Password is required"),
 });
 
 /**

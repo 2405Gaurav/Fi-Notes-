@@ -56,7 +56,15 @@ export async function list(
 
     const result = await noteService.listNotes(req.user!.userId, parsed.data);
 
-    res.status(HTTP_STATUS.OK).json(result);
+    // If pagination was explicitly requested, return paginated format
+    // Otherwise return flat array (assignment spec compatibility)
+    const explicitlyPaginated = req.query.page !== undefined || req.query.limit !== undefined;
+
+    if (explicitlyPaginated) {
+      res.status(HTTP_STATUS.OK).json(result);
+    } else {
+      res.status(HTTP_STATUS.OK).json(result.notes);
+    }
   } catch (err) {
     next(err);
   }
