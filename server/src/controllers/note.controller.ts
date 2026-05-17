@@ -128,3 +128,66 @@ export async function remove(
     next(err);
   }
 }
+
+// ─── POST /notes/:id/restore ────────────────
+
+export async function restore(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const noteId = req.params.id as string;
+    const note = await noteService.restoreNote(noteId, req.user!.userId);
+
+    res.status(HTTP_STATUS.OK).json({
+      message: "Note restored successfully",
+      note,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── DELETE /notes/:id/permanent ────────────
+
+export async function permanentDelete(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const noteId = req.params.id as string;
+    await noteService.permanentDeleteNote(noteId, req.user!.userId);
+
+    res.status(HTTP_STATUS.NO_CONTENT).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ─── GET /notes/:id/versions ────────────────
+
+export async function versions(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const noteId = req.params.id as string;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
+
+    const result = await noteService.getNoteVersions(
+      noteId,
+      req.user!.userId,
+      page,
+      Math.min(limit, 100)
+    );
+
+    res.status(HTTP_STATUS.OK).json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+

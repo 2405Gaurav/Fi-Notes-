@@ -7,6 +7,8 @@ import {
   apiDeleteNote,
   apiShareNote,
   apiSearchNotes,
+  apiRestoreNote,
+  apiPermanentDeleteNote,
 } from "../api/notesApi";
 
 // ─── Toast Types ─────────────────────────────
@@ -43,6 +45,16 @@ interface AppState {
   ) => Promise<void>;
   deleteNote: (id: string) => Promise<void>;
   shareNote: (noteId: string, email: string, permission?: "READ" | "EDIT") => Promise<void>;
+
+  // Trash
+  trashNotes: Note[];
+  trashMeta: PaginationMeta | null;
+  trashLoading: boolean;
+  trashLoadingMore: boolean;
+  fetchTrash: (page?: number) => Promise<void>;
+  loadMoreTrash: () => Promise<void>;
+  restoreNote: (id: string) => Promise<void>;
+  permanentDeleteNote: (id: string) => Promise<void>;
 
   // Search
   searchQuery: string;
@@ -97,6 +109,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       user: null,
       notes: [],
       notesMeta: null,
+      trashNotes: [],
+      trashMeta: null,
       searchResults: [],
       searchMeta: null,
       searchQuery: "",
@@ -192,12 +206,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { user } = get();
     if (!user) return;
     try {
+      // Find the note before deleting for trash UI
+      const deletedNote = get().notes.find((n) => n.id === id);
       await apiDeleteNote(user.token, id);
       set((s) => ({
         notes: s.notes.filter((n) => n.id !== id),
         searchResults: s.searchResults.filter((n) => n.id !== id),
         notesMeta: s.notesMeta
           ? { ...s.notesMeta, total: Math.max(0, s.notesMeta.total - 1) }
+          : null,
+        // Add to local trash for instant UI
+        trashNotes: deletedNote ? [deletedNote, ...s.trashNotes] : s.trashNotes,
+        trashMeta: s.trashMeta
+          ? { ...s.trashMeta, total: s.trashMeta.total + 1 }
           : null,
       }));
       get().addToast("Note moved to trash", "info");
@@ -275,9 +296,102 @@ export const useAppStore = create<AppState>((set, get) => ({
     await get().executeSearch(searchQuery, searchMeta.page + 1);
   },
 
+  // ── Trash ──
+  trashNotes: [],
+  trashMeta: null,
+  trashLoading: false,
+  trashLoadingMore: false,
+
+  fetchTrash: async (page = 1) => {
+    const { user } = get();
+    if (!user) return;
+
+    if (page === 1) set({ trashLoading: true });
+    else set({ trashLoadingMore: true });
+
+    try {
+      const result = await apiFetchNotes(user.token, page, 20, undefined, true);
+
+      if (page === 1) {
+        set({ trashNotes: result.notes, trashMeta: result.meta, trashLoading: false });
+      } else {
+        set((s) => {
+          const existingIds = new Set(s.trashNotes.map((n) => n.id));
+          const newNotes = result.notes.filter((n) => !existingIds.has(n.id));
+          return {
+            trashNotes: [...s.trashNotes, ...newNotes],
+            trashMeta: result.meta,
+            trashLoadingMore: false,
+          };
+        });
+      }
+    } catch {
+      set({ trashLoading: false, trashLoadingMore: false });
+      get().addToast("Failed to load trash", "error");
+    }
+  },
+
+  loadMoreTrash: async () => {
+    const { trashMeta, trashLoadingMore } = get();
+    if (trashLoadingMore || !trashMeta) return;
+    if (trashMeta.page >= trashMeta.totalPages) return;
+    await get().fetchTrash(trashMeta.page + 1);
+  },
+
+  restoreNote: async (id) => {
+    const { user } = get();
+    if (!user) return;
+    try {
+      const result = await apiRestoreNote(user.token, id);
+      // Remove from trash, add restored note back to notes
+      set((s) => ({
+        trashNotes: s.trashNotes.filter((n) => n.id !== id),
+        trashMeta: s.trashMeta
+          ? { ...s.trashMeta, total: Math.max(0, s.trashMeta.total - 1) }
+          : null,
+        notes: [result.note, ...s.notes],
+        notesMeta: s.notesMeta
+          ? { ...s.notesMeta, total: s.notesMeta.total + 1 }
+          : null,
+      }));
+      get().addToast("Note restored", "success");
+    } catch (err) {
+      get().addToast(
+        err instanceof Error ? err.message : "Failed to restore note",
+        "error"
+      );
+    }
+  },
+
+  permanentDeleteNote: async (id) => {
+    const { user } = get();
+    if (!user) return;
+    try {
+      await apiPermanentDeleteNote(user.token, id);
+      set((s) => ({
+        trashNotes: s.trashNotes.filter((n) => n.id !== id),
+        trashMeta: s.trashMeta
+          ? { ...s.trashMeta, total: Math.max(0, s.trashMeta.total - 1) }
+          : null,
+      }));
+      get().addToast("Note permanently deleted", "info");
+    } catch (err) {
+      get().addToast(
+        err instanceof Error ? err.message : "Failed to delete note",
+        "error"
+      );
+    }
+  },
+
   // ── UI ──
   activeView: "notes",
-  setActiveView: (view) => set({ activeView: view, searchQuery: "", searchResults: [], searchMeta: null }),
+  setActiveView: (view) => {
+    set({ activeView: view, searchQuery: "", searchResults: [], searchMeta: null });
+    // Auto-fetch trash when switching to that view
+    if (view === "trash") {
+      get().fetchTrash();
+    }
+  },
   sidebarOpen: true,
   toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
   expandedNote: null,

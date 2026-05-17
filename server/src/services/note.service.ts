@@ -289,8 +289,12 @@ export async function deleteNote(noteId: string, userId: string) {
     select: { ownerId: true, isDeleted: true },
   });
 
-  if (!existing || existing.isDeleted) {
+  if (!existing) {
     throw new NoteError("Note not found", 404);
+  }
+
+  if (existing.isDeleted) {
+    throw new NoteError("Note is already in trash", 400);
   }
 
   // Only owner can delete — never shared users
@@ -306,3 +310,134 @@ export async function deleteNote(noteId: string, userId: string) {
     },
   });
 }
+
+// ─── RESTORE (owner only) ───────────────────
+
+export async function restoreNote(noteId: string, userId: string) {
+  const existing = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: { ownerId: true, isDeleted: true },
+  });
+
+  if (!existing) {
+    throw new NoteError("Note not found", 404);
+  }
+
+  if (!existing.isDeleted) {
+    throw new NoteError("Note is not in trash", 400);
+  }
+
+  if (!isOwner(existing.ownerId, userId)) {
+    throw new NoteError("Only the note owner can restore this note", 403);
+  }
+
+  const restored = await prisma.note.update({
+    where: { id: noteId },
+    data: {
+      isDeleted: false,
+      deletedAt: null,
+    },
+    select: noteSelectWithSharing,
+  });
+
+  return formatNoteResponse(restored, userId);
+}
+
+// ─── PERMANENT DELETE (owner only) ──────────
+
+export async function permanentDeleteNote(noteId: string, userId: string) {
+  const existing = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: { ownerId: true, isDeleted: true },
+  });
+
+  if (!existing) {
+    throw new NoteError("Note not found", 404);
+  }
+
+  if (!existing.isDeleted) {
+    throw new NoteError(
+      "Note must be in trash before permanent deletion. Move it to trash first.",
+      400
+    );
+  }
+
+  if (!isOwner(existing.ownerId, userId)) {
+    throw new NoteError("Only the note owner can permanently delete this note", 403);
+  }
+
+  // Hard delete — cascading deletes SharedNote + NoteVersion via Prisma schema
+  await prisma.note.delete({
+    where: { id: noteId },
+  });
+}
+
+// ─── VERSION HISTORY (owner + shared users) ──
+
+export async function getNoteVersions(
+  noteId: string,
+  userId: string,
+  page = 1,
+  limit = 20
+) {
+  // First check access
+  const note = await prisma.note.findUnique({
+    where: { id: noteId },
+    select: {
+      ownerId: true,
+      isDeleted: true,
+      sharedWith: {
+        select: { sharedWithUserId: true, permission: true },
+      },
+    },
+  });
+
+  if (!note) {
+    throw new NoteError("Note not found", 404);
+  }
+
+  // Allow viewing versions for deleted notes too (for owner)
+  const noteOwner = isOwner(note.ownerId, userId);
+  const isShared = note.sharedWith.some(
+    (s) => s.sharedWithUserId === userId
+  );
+
+  if (!noteOwner && !isShared) {
+    throw new NoteError("You do not have access to this note", 403);
+  }
+
+  // If deleted, only owner can see versions
+  if (note.isDeleted && !noteOwner) {
+    throw new NoteError("Note not found", 404);
+  }
+
+  const skip = (page - 1) * limit;
+
+  const [versions, total] = await Promise.all([
+    prisma.noteVersion.findMany({
+      where: { noteId },
+      select: {
+        id: true,
+        version: true,
+        title: true,
+        content: true,
+        createdAt: true,
+      },
+      orderBy: { version: "desc" },
+      skip,
+      take: limit,
+    }),
+    prisma.noteVersion.count({ where: { noteId } }),
+  ]);
+
+  return {
+    versions,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+}
+

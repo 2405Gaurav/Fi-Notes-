@@ -6,6 +6,9 @@ import {
   getById,
   update,
   remove,
+  restore,
+  permanentDelete,
+  versions,
 } from "../controllers/note.controller";
 import {
   share,
@@ -238,6 +241,150 @@ router.put("/:id", update);
  *         $ref: '#/components/responses/InternalServerError'
  */
 router.delete("/:id", remove);
+
+// ═══════════════════════════════════════════════
+//  TRASH: RESTORE & PERMANENT DELETE
+// ═══════════════════════════════════════════════
+
+/**
+ * @swagger
+ * /notes/{id}/restore:
+ *   post:
+ *     tags: [Notes]
+ *     summary: Restore a note from trash
+ *     description: |
+ *       Restores a soft-deleted note. **Owner only.**
+ *       The note must be in trash (isDeleted: true).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *     responses:
+ *       200:
+ *         description: Note restored successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: "Note restored successfully"
+ *                 note:
+ *                   $ref: '#/components/schemas/NoteWithSharing'
+ *       400:
+ *         description: Note is not in trash
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Only the note owner can restore
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.post("/:id/restore", restore);
+
+/**
+ * @swagger
+ * /notes/{id}/permanent:
+ *   delete:
+ *     tags: [Notes]
+ *     summary: Permanently delete a note
+ *     description: |
+ *       Hard-deletes a note and all its associated data (versions, shares).
+ *       **Owner only.** The note must be in trash first.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *     responses:
+ *       204:
+ *         description: Note permanently deleted (no content)
+ *       400:
+ *         description: Note must be in trash before permanent deletion
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: Only the note owner can permanently delete
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.delete("/:id/permanent", permanentDelete);
+
+// ═══════════════════════════════════════════════
+//  VERSION HISTORY
+// ═══════════════════════════════════════════════
+
+/**
+ * @swagger
+ * /notes/{id}/versions:
+ *   get:
+ *     tags: [Notes]
+ *     summary: Get version history for a note
+ *     description: |
+ *       Returns paginated version history (newest first).
+ *       Accessible by owner and shared users.
+ *       Each version is an immutable snapshot taken before an edit.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Note UUID
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *     responses:
+ *       200:
+ *         description: Version history
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 versions:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/NoteVersion'
+ *                 meta:
+ *                   $ref: '#/components/schemas/PaginationMeta'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       403:
+ *         description: User does not have access
+ *       404:
+ *         $ref: '#/components/responses/NotFoundError'
+ *       500:
+ *         $ref: '#/components/responses/InternalServerError'
+ */
+router.get("/:id/versions", versions);
 
 // ═══════════════════════════════════════════════
 //  SHARING & COLLABORATION

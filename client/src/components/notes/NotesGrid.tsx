@@ -81,7 +81,15 @@ export default function NotesGrid() {
 
   const [shareTarget, setShareTarget] = useState<Note | null>(null);
 
+  // Trash state
+  const trashNotes = useAppStore((s) => s.trashNotes);
+  const trashMeta = useAppStore((s) => s.trashMeta);
+  const trashLoading = useAppStore((s) => s.trashLoading);
+  const trashLoadingMore = useAppStore((s) => s.trashLoadingMore);
+  const loadMoreTrash = useAppStore((s) => s.loadMoreTrash);
+
   const isSearching = searchQuery.trim().length > 0;
+  const isTrashView = activeView === "trash";
 
   // Filter notes based on view (when not searching)
   const filtered = useMemo(() => {
@@ -128,13 +136,33 @@ export default function NotesGrid() {
 
   const config = viewConfig[activeView] || viewConfig.notes;
 
-  // The data to render — either search results or filtered notes
-  const displayNotes = isSearching ? searchResults : others;
-  const isLoading = isSearching ? searchLoading : notesLoading;
-  const isLoadingMore = isSearching ? searchLoadingMore : loadingMore;
-  const meta = isSearching ? searchMeta : notesMeta;
+  // The data to render — depends on view
+  const displayNotes = isTrashView
+    ? trashNotes
+    : isSearching
+      ? searchResults
+      : others;
+  const isLoading = isTrashView
+    ? trashLoading
+    : isSearching
+      ? searchLoading
+      : notesLoading;
+  const isLoadingMore = isTrashView
+    ? trashLoadingMore
+    : isSearching
+      ? searchLoadingMore
+      : loadingMore;
+  const meta = isTrashView
+    ? trashMeta
+    : isSearching
+      ? searchMeta
+      : notesMeta;
   const hasMore = meta ? meta.page < meta.totalPages : false;
-  const handleLoadMore = isSearching ? loadMoreSearch : loadMoreNotes;
+  const handleLoadMore = isTrashView
+    ? loadMoreTrash
+    : isSearching
+      ? loadMoreSearch
+      : loadMoreNotes;
 
   return (
     <>
@@ -180,18 +208,18 @@ export default function NotesGrid() {
       )}
 
       {/* Empty state */}
-      {!isLoading && (isSearching ? searchResults.length === 0 && searchMeta : filtered.length === 0) && (
-        <EmptyState
-          icon={isSearching ? Search : config.icon}
-          title={
-            isSearching
-              ? "No notes match your search"
-              : config.emptyTitle
-          }
-          subtitle={
-            isSearching ? undefined : config.emptySubtitle
-          }
-        />
+      {!isLoading && (
+        isTrashView
+          ? trashNotes.length === 0 && !trashLoading && (
+              <EmptyState icon={config.icon} title={config.emptyTitle} subtitle={config.emptySubtitle} />
+            )
+          : (isSearching ? searchResults.length === 0 && searchMeta : filtered.length === 0) && (
+              <EmptyState
+                icon={isSearching ? Search : config.icon}
+                title={isSearching ? "No notes match your search" : config.emptyTitle}
+                subtitle={isSearching ? undefined : config.emptySubtitle}
+              />
+            )
       )}
 
       {/* Notes grid */}
@@ -254,7 +282,7 @@ export default function NotesGrid() {
               <AnimatePresence>
                 {displayNotes.map((note) => (
                   <motion.div key={note.id} variants={childVariants}>
-                    <NoteCard note={note} onShare={setShareTarget} />
+                    <NoteCard note={note} onShare={setShareTarget} isTrash={isTrashView} />
                   </motion.div>
                 ))}
               </AnimatePresence>

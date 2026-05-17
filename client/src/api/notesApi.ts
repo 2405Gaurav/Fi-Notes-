@@ -108,13 +108,15 @@ export async function apiFetchNotes(
   token: string,
   page = 1,
   limit = 20,
-  search?: string
+  search?: string,
+  deleted?: boolean
 ): Promise<PaginatedResponse> {
   const params = new URLSearchParams({
     page: String(page),
     limit: String(limit),
   });
   if (search) params.set("search", search);
+  if (deleted) params.set("deleted", "true");
 
   const res = await fetch(`${API_BASE}/notes?${params}`, {
     headers: headers(token),
@@ -195,5 +197,65 @@ export async function apiShareNote(
     body: JSON.stringify({ share_with_email: email, permission }),
   });
   return handleResponse<{ message: string }>(res);
+}
+
+// ─── Trash Actions ───────────────────────────
+
+export async function apiRestoreNote(
+  token: string,
+  noteId: string
+): Promise<{ message: string; note: Note }> {
+  const res = await fetch(`${API_BASE}/notes/${noteId}/restore`, {
+    method: "POST",
+    headers: headers(token),
+  });
+  return handleResponse<{ message: string; note: Note }>(res);
+}
+
+export async function apiPermanentDeleteNote(
+  token: string,
+  noteId: string
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/notes/${noteId}/permanent`, {
+    method: "DELETE",
+    headers: headers(token),
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(
+      (data as { message?: string }).message || "Something went wrong. Please try again."
+    );
+  }
+}
+
+// ─── Version History ─────────────────────────
+
+export interface NoteVersion {
+  id: string;
+  version: number;
+  title: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface VersionsResponse {
+  versions: NoteVersion[];
+  meta: PaginationMeta;
+}
+
+export async function apiGetNoteVersions(
+  token: string,
+  noteId: string,
+  page = 1,
+  limit = 20
+): Promise<VersionsResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+  const res = await fetch(`${API_BASE}/notes/${noteId}/versions?${params}`, {
+    headers: headers(token),
+  });
+  return handleResponse<VersionsResponse>(res);
 }
 

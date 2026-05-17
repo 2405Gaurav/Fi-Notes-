@@ -2,18 +2,21 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import { useAppStore } from "../../context/AppContext";
 import type { Note } from "../../api/notesApi";
-import { Pin, Archive, Trash2, Users, Eye, Pencil } from "lucide-react";
+import { Pin, Archive, Trash2, Users, Eye, Pencil, RotateCcw, Trash } from "lucide-react";
 
 interface NoteCardProps {
   note: Note;
   onShare: (note: Note) => void;
+  isTrash?: boolean;
 }
 
-export default function NoteCard({ note, onShare }: NoteCardProps) {
+export default function NoteCard({ note, onShare, isTrash }: NoteCardProps) {
   const [hovered, setHovered] = useState(false);
   const setExpandedNote = useAppStore((s) => s.setExpandedNote);
   const updateNote = useAppStore((s) => s.updateNote);
   const deleteNote = useAppStore((s) => s.deleteNote);
+  const restoreNote = useAppStore((s) => s.restoreNote);
+  const permanentDeleteNote = useAppStore((s) => s.permanentDeleteNote);
 
   const isOwner = note.permission === "OWNER";
   const isShared = !isOwner;
@@ -32,21 +35,24 @@ export default function NoteCard({ note, onShare }: NoteCardProps) {
       tabIndex={0}
       aria-label={`Note: ${note.title || "Untitled"}`}
       onKeyDown={(e) => {
-        if (e.key === "Enter") setExpandedNote(note);
+        if (e.key === "Enter" && !isTrash) setExpandedNote(note);
       }}
-      onClick={() => setExpandedNote(note)}
+      onClick={() => {
+        if (!isTrash) setExpandedNote(note);
+      }}
       style={{
         background: hovered ? "var(--bg-card-hover)" : "var(--bg-card)",
         border: `1px solid ${hovered ? "var(--border-card)" : "transparent"}`,
         borderRadius: "var(--radius-card)",
         padding: 16,
-        cursor: "pointer",
+        cursor: isTrash ? "default" : "pointer",
         transition: "background 0.12s, border-color 0.12s",
         position: "relative",
+        opacity: isTrash ? 0.75 : 1,
       }}
     >
-      {/* Pin indicator */}
-      {note.isPinned && (
+      {/* Pin indicator (not in trash) */}
+      {!isTrash && note.isPinned && (
         <Pin
           size={14}
           fill="var(--color-pinned)"
@@ -63,7 +69,7 @@ export default function NoteCard({ note, onShare }: NoteCardProps) {
             fontWeight: 500,
             color: "var(--text-primary)",
             marginBottom: 8,
-            paddingRight: note.isPinned ? 24 : 0,
+            paddingRight: !isTrash && note.isPinned ? 24 : 0,
             lineHeight: 1.35,
           }}
         >
@@ -78,7 +84,7 @@ export default function NoteCard({ note, onShare }: NoteCardProps) {
           style={{
             color: "var(--text-secondary)",
             display: "-webkit-box",
-            WebkitLineClamp: 10,
+            WebkitLineClamp: isTrash ? 4 : 10,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
             lineHeight: 1.55,
@@ -88,78 +94,90 @@ export default function NoteCard({ note, onShare }: NoteCardProps) {
         </p>
       )}
 
-      {/* Sharing badges */}
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-        {/* Shared WITH ME badge — shows who shared it */}
-        {isShared && note.sharedBy && (
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "3px 10px",
-              borderRadius: 12,
-              background: "rgba(129,201,149,0.15)",
-              color: "var(--color-shared)",
-              fontSize: "var(--text-xs)",
-              fontWeight: 500,
-            }}
-          >
-            <Users size={11} />
-            Shared by {note.sharedBy.name || note.sharedBy.email}
-          </div>
-        )}
+      {/* Sharing badges (not in trash) */}
+      {!isTrash && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+          {isShared && note.sharedBy && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 10px",
+                borderRadius: 12,
+                background: "rgba(129,201,149,0.15)",
+                color: "var(--color-shared)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+              }}
+            >
+              <Users size={11} />
+              Shared by {note.sharedBy.name || note.sharedBy.email}
+            </div>
+          )}
 
-        {/* Permission badge for shared notes */}
-        {isShared && (
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "3px 8px",
-              borderRadius: 12,
-              background:
-                note.permission === "EDIT"
-                  ? "rgba(254,185,0,0.12)"
-                  : "rgba(138,180,248,0.12)",
-              color:
-                note.permission === "EDIT"
-                  ? "var(--color-pinned)"
-                  : "var(--border-focus)",
-              fontSize: "var(--text-xs)",
-              fontWeight: 500,
-            }}
-          >
-            {note.permission === "EDIT" ? (
-              <Pencil size={10} />
-            ) : (
-              <Eye size={10} />
-            )}
-            {note.permission === "EDIT" ? "Can edit" : "View only"}
-          </div>
-        )}
+          {isShared && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "3px 8px",
+                borderRadius: 12,
+                background:
+                  note.permission === "EDIT"
+                    ? "rgba(254,185,0,0.12)"
+                    : "rgba(138,180,248,0.12)",
+                color:
+                  note.permission === "EDIT"
+                    ? "var(--color-pinned)"
+                    : "var(--border-focus)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+              }}
+            >
+              {note.permission === "EDIT" ? (
+                <Pencil size={10} />
+              ) : (
+                <Eye size={10} />
+              )}
+              {note.permission === "EDIT" ? "Can edit" : "View only"}
+            </div>
+          )}
 
-        {/* Owner badge — shows how many collaborators */}
-        {isOwner && note.sharedWith.length > 0 && (
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 5,
-              padding: "3px 10px",
-              borderRadius: 12,
-              background: "rgba(129,201,149,0.15)",
-              color: "var(--color-shared)",
-              fontSize: "var(--text-xs)",
-              fontWeight: 500,
-            }}
-          >
-            <Users size={11} />
-            Shared with {note.sharedWith.length}
-          </div>
-        )}
-      </div>
+          {isOwner && note.sharedWith.length > 0 && (
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "3px 10px",
+                borderRadius: 12,
+                background: "rgba(129,201,149,0.15)",
+                color: "var(--color-shared)",
+                fontSize: "var(--text-xs)",
+                fontWeight: 500,
+              }}
+            >
+              <Users size={11} />
+              Shared with {note.sharedWith.length}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Trash badge */}
+      {isTrash && note.updatedAt && (
+        <div
+          style={{
+            marginTop: 10,
+            fontSize: "var(--text-xs)",
+            color: "var(--text-muted)",
+          }}
+        >
+          Deleted {new Date(note.updatedAt).toLocaleDateString()}
+        </div>
+      )}
 
       {/* Action Bar */}
       <motion.div
@@ -179,46 +197,66 @@ export default function NoteCard({ note, onShare }: NoteCardProps) {
           borderTop: hovered ? "1px solid #3c3f41" : "1px solid transparent",
         }}
       >
-        {/* Owner-only actions: Pin, Archive, Delete */}
-        {isOwner && (
+        {isTrash ? (
+          /* ── Trash view: Restore + Permanent Delete ── */
           <>
             <ActionBtn
-              icon={
-                <Pin
-                  size={16}
-                  fill={note.isPinned ? "var(--color-pinned)" : "none"}
-                  color={
-                    note.isPinned
-                      ? "var(--color-pinned)"
-                      : "var(--text-secondary)"
-                  }
-                />
-              }
-              label={note.isPinned ? "Unpin" : "Pin"}
-              onClick={() => updateNote(note.id, { isPinned: !note.isPinned })}
+              icon={<RotateCcw size={16} color="var(--color-shared)" />}
+              label="Restore"
+              onClick={() => restoreNote(note.id)}
             />
             <ActionBtn
-              icon={<Archive size={16} color="var(--text-secondary)" />}
-              label="Archive"
-              onClick={() =>
-                updateNote(note.id, { isArchived: !note.isArchived })
-              }
-            />
-            <ActionBtn
-              icon={<Trash2 size={16} color="var(--text-secondary)" />}
-              label="Delete"
-              onClick={() => deleteNote(note.id)}
+              icon={<Trash size={16} color="var(--color-danger)" />}
+              label="Delete forever"
+              onClick={() => {
+                if (window.confirm("Permanently delete this note? This cannot be undone.")) {
+                  permanentDeleteNote(note.id);
+                }
+              }}
             />
           </>
-        )}
-
-        {/* Share button — owner only (server enforces) */}
-        {isOwner && (
-          <ActionBtn
-            icon={<Users size={16} color="var(--text-secondary)" />}
-            label="Share"
-            onClick={() => onShare(note)}
-          />
+        ) : (
+          /* ── Normal view ── */
+          <>
+            {isOwner && (
+              <>
+                <ActionBtn
+                  icon={
+                    <Pin
+                      size={16}
+                      fill={note.isPinned ? "var(--color-pinned)" : "none"}
+                      color={
+                        note.isPinned
+                          ? "var(--color-pinned)"
+                          : "var(--text-secondary)"
+                      }
+                    />
+                  }
+                  label={note.isPinned ? "Unpin" : "Pin"}
+                  onClick={() =>
+                    updateNote(note.id, { isPinned: !note.isPinned })
+                  }
+                />
+                <ActionBtn
+                  icon={<Archive size={16} color="var(--text-secondary)" />}
+                  label="Archive"
+                  onClick={() =>
+                    updateNote(note.id, { isArchived: !note.isArchived })
+                  }
+                />
+                <ActionBtn
+                  icon={<Trash2 size={16} color="var(--text-secondary)" />}
+                  label="Delete"
+                  onClick={() => deleteNote(note.id)}
+                />
+                <ActionBtn
+                  icon={<Users size={16} color="var(--text-secondary)" />}
+                  label="Share"
+                  onClick={() => onShare(note)}
+                />
+              </>
+            )}
+          </>
         )}
       </motion.div>
     </motion.div>
