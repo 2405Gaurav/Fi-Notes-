@@ -3,15 +3,12 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies first (cached layer)
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci
 
-# Generate Prisma client
 RUN npx prisma generate
 
-# Copy source and compile TypeScript
 COPY tsconfig.json ./
 COPY src ./src/
 RUN npm run build
@@ -23,13 +20,14 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install production deps only
 COPY package.json package-lock.json* ./
 COPY prisma ./prisma/
 RUN npm ci --omit=dev && npx prisma generate
 
-# Copy compiled output from builder
 COPY --from=builder /app/dist ./dist
+
+# ← ADD THIS LINE
+COPY --from=builder /app/src/generated ./dist/generated
 
 EXPOSE 3000
 
