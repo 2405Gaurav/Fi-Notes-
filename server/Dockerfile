@@ -4,13 +4,21 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
+
 RUN npm ci
-RUN npx prisma generate        # ← before tsc
+
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+
+RUN npx prisma generate
 
 COPY tsconfig.json ./
 COPY src ./src/
+
+RUN ls -la generated/prisma
+
 RUN npm run build
+
 
 # ─── Stage 2: Production ────────────────────
 FROM node:20-alpine AS runner
@@ -20,10 +28,15 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY package.json package-lock.json* ./
-COPY prisma ./prisma/
-RUN npm ci --omit=dev
-RUN npx prisma generate        # ← before runtime
 
+RUN npm ci --omit=dev
+
+COPY prisma ./prisma/
+COPY prisma.config.ts ./
+
+RUN npx prisma generate
+
+COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000

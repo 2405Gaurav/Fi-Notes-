@@ -1,6 +1,6 @@
 import prisma from "../lib/prisma.js";
 import { NoteError } from "./note.service.js";
-import type { SharePermission } from "../generated/prisma/client.js";
+import type { SharePermission } from "../../generated/prisma/client.js";
 import type {
   ShareNoteInput,
   UpdatePermissionInput,

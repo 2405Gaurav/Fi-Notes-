@@ -1,7 +1,7 @@
 import prisma from "../lib/prisma.js";
 import { PAGINATION } from "../constants/index.js";
 import { isOwner, canEditNote } from "./share.service.js";
-import type { Prisma } from "../generated/prisma/client.js";
+import type { Prisma } from "../../generated/prisma/client.js";
 import type {
   CreateNoteInput,
   UpdateNoteInput,
