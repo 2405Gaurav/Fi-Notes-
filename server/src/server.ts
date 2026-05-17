@@ -154,7 +154,7 @@ prisma
       console.log(`✓ Swagger docs at http://localhost:${config.port}/api-docs`);
     });
   })
-  .catch((err) => {
+  .catch((err: Error) => {
     console.error("✗ Failed to connect to database:", err);
     process.exit(1);
   });
